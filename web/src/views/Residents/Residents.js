@@ -248,7 +248,7 @@ const Residents = () => {
               </thead>
               <tbody>
                 {data.length === 0 ? (
-                  <tr><td colSpan={9}><div className="empty-state"><div className="empty-icon">👥</div><p>{search ? `No residents found for "${search}"` : 'No residents found.'}</p></div></td></tr>
+                  <tr><td colSpan={6}><div className="empty-state"><p>No residents found.</p></div></td></tr>
                 ) : data.map(r => {
                   const age = computeAge(r.birthDate);
                   return (

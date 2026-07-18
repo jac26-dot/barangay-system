@@ -149,7 +149,7 @@ const Statistics = () => {
         </div>
         <div className="card-body">
           {totalActive === 0 ? (
-            <div className="empty-state"><div className="empty-icon">📊</div><p>No data yet.</p></div>
+            <div className="empty-state"><p>No data yet.</p></div>
           ) : (
             <>
               <ResponsiveContainer width="100%" height={260}>

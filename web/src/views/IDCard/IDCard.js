@@ -262,10 +262,10 @@ const IDCard = () => {
               </thead>
               <tbody>
                 {residents.length === 0 ? (
-                  <tr><td colSpan={6}><div className="empty-state"><div className="empty-icon">🪪</div><p>No residents found.</p></div></td></tr>
+                  <tr><td colSpan={6}><div className="empty-state"><p>No residents found.</p></div></td></tr>
                 ) : residents.map(r => (
                   <tr key={r.id}>
-                    <td><strong>{r.lastName}, {r.firstName} {r.middleName}</strong></td>
+                    <tr><td colSpan={6}><div className="empty-state"><p>No residents found.</p></div></td></tr>
                     <td style={{ fontSize:12 }}>{r.address}</td>
                     <td>{r.gender}</td>
                     <td><strong>{computeAge(r.birthDate)}</strong></td>
