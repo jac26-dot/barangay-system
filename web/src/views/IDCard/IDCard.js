@@ -262,10 +262,10 @@ const IDCard = () => {
               </thead>
               <tbody>
                 {residents.length === 0 ? (
-                  <tr><td colSpan={6}><div className="empty-state"><p>No residents found.</p></div></td></tr>
+                  <tr><td colSpan={6}><div className="empty-state"><p>{search ? `No residents found for "${search}"` : 'No residents found.'}</p></div></td></tr>
                 ) : residents.map(r => (
                   <tr key={r.id}>
-                    <tr><td colSpan={9} style={{textAlign: 'center'}}><div className="empty-state"><p>{search ? `No residents found for "${search}"` : 'No residents found.'}</p></div></td></tr>
+                    <td style={{ fontWeight:600 }}>{r.lastName}, {r.firstName} {r.middleName || ''}</td>
                     <td style={{ fontSize:12 }}>{r.address}</td>
                     <td>{r.gender}</td>
                     <td><strong>{computeAge(r.birthDate)}</strong></td>
