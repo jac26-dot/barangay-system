@@ -4,19 +4,19 @@ import { APP_NAME, BARANGAY_NAME } from './config';
 import logo from './barangay-logo.jpg';
 
 const navItems = [
-  { to: '/dashboard',    icon: '📊', label: 'Dashboard' },
+  { to: '/dashboard',    label: 'Dashboard' },
   { section: 'Records' },
-  { to: '/residents',    icon: '👥', label: 'Residents' },
-  { to: '/officials',    icon: '🏛️', label: 'Officials' },
-  { to: '/statistics',   icon: '📈', label: 'Statistics' },
+  { to: '/residents',    label: 'Residents' },
+  { to: '/officials',    label: 'Officials' },
+  { to: '/statistics',   label: 'Statistics' },
   { section: 'Services' },
-  { to: '/documents',    icon: '📄', label: 'Documents' },
-  { to: '/blotter',      icon: '📋', label: 'Blotter' },
-  { to: '/idcard',       icon: '🪪', label: 'ID Card' },
+  { to: '/documents',    label: 'Documents' },
+  { to: '/blotter',      label: 'Blotter' },
+  { to: '/idcard',       label: 'ID Card' },
   { section: 'Governance' },
-  { to: '/transparency', icon: '🔍', label: 'Transparency' },
+  { to: '/transparency', label: 'Transparency' },
   { section: 'System' },
-  { to: '/users',        icon: '🔐', label: 'User Accounts' },
+  { to: '/users',        label: 'User Accounts' },
 ];
 
 const SiteHeader = () => {
@@ -46,8 +46,12 @@ const SiteHeader = () => {
           item.section ? (
             <div key={i} className="sidebar-section-label">{item.section}</div>
           ) : (
-            <NavLink key={item.to} to={item.to} className={({ isActive }) => isActive ? 'active' : ''}>
-              <span className="nav-icon">{item.icon}</span>
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) => isActive ? 'active' : ''}
+              style={{ fontWeight: 700 }}
+            >
               {item.label}
             </NavLink>
           )
@@ -59,8 +63,12 @@ const SiteHeader = () => {
           Logged in as <strong style={{ color:'#fff' }}>{user.name}</strong>
           <br /><span style={{ textTransform:'capitalize' }}>{user.role}</span>
         </div>
-        <button className="btn btn-ghost btn-sm" style={{ width:'100%', color:'#9ca3af', borderColor:'#374151' }} onClick={handleLogout}>
-          🚪 Logout
+        <button
+          className="btn btn-ghost btn-sm"
+          style={{ width:'100%', color:'#9ca3af', borderColor:'#374151', fontWeight:600 }}
+          onClick={handleLogout}
+        >
+          Logout
         </button>
       </div>
     </aside>
@@ -68,4 +76,3 @@ const SiteHeader = () => {
 };
 
 export default SiteHeader;
- 
