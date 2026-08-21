@@ -2,7 +2,6 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { APP_NAME, BARANGAY_NAME } from './config';
 import logo from './barangay-logo.jpg';
-
 const navItems = [
   { to: '/dashboard',    label: 'Dashboard' },
   { section: 'Records' },
@@ -19,17 +18,14 @@ const navItems = [
   { to: '/backup',       label: 'Backup & Export' },
   { to: '/users',        label: 'User Accounts' },
 ];
-
 const SiteHeader = () => {
   const navigate = useNavigate();
   const user     = JSON.parse(localStorage.getItem('user') || '{}');
-
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     navigate('/login');
   };
-
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
@@ -41,7 +37,6 @@ const SiteHeader = () => {
           </div>
         </div>
       </div>
-
       <nav className="sidebar-nav">
         {navItems.map((item, i) =>
           item.section ? (
@@ -54,7 +49,6 @@ const SiteHeader = () => {
           )
         )}
       </nav>
-
       <div style={{ padding:'16px', borderTop:'1px solid #374151' }}>
         <div style={{ fontSize:12, color:'#9ca3af', marginBottom:8 }}>
           <span style={{ color:'#6b7280' }}>Logged in as</span> <strong style={{ color:'#fff', fontSize:13 }}>{user.name}</strong>
@@ -67,5 +61,4 @@ const SiteHeader = () => {
     </aside>
   );
 };
-
 export default SiteHeader;
