@@ -4,19 +4,20 @@ import { APP_NAME, BARANGAY_NAME } from './config';
 import logo from './barangay-logo.jpg';
 
 const navItems = [
-  { to: '/dashboard',    icon: '📊', label: 'Dashboard' },
+  { to: '/dashboard',    label: 'Dashboard' },
   { section: 'Records' },
-  { to: '/residents',    icon: '👥', label: 'Residents' },
-  { to: '/officials',    icon: '🏛️', label: 'Officials' },
-  { to: '/statistics',   icon: '📈', label: 'Statistics' },
+  { to: '/residents',    label: 'Residents' },
+  { to: '/officials',    label: 'Officials' },
+  { to: '/statistics',   label: 'Statistics' },
   { section: 'Services' },
-  { to: '/documents',    icon: '📄', label: 'Documents' },
-  { to: '/blotter',      icon: '📋', label: 'Blotter' },
-  { to: '/idcard',       icon: '🪪', label: 'ID Card' },
+  { to: '/documents',    label: 'Documents' },
+  { to: '/blotter',      label: 'Blotter' },
+  { to: '/idcard',       label: 'ID Card' },
   { section: 'Governance' },
-  { to: '/transparency', icon: '🔍', label: 'Transparency' },
+  { to: '/transparency', label: 'Transparency' },
   { section: 'System' },
-  { to: '/users',        icon: '🔐', label: 'User Accounts' },
+  { to: '/backup',       label: 'Backup & Export' },
+  { to: '/users',        label: 'User Accounts' },
 ];
 
 const SiteHeader = () => {
@@ -46,8 +47,8 @@ const SiteHeader = () => {
           item.section ? (
             <div key={i} className="sidebar-section-label">{item.section}</div>
           ) : (
-            <NavLink key={item.to} to={item.to} className={({ isActive }) => isActive ? 'active' : ''}>
-              <span className="nav-icon">{item.icon}</span>
+            <NavLink key={item.to} to={item.to} className={({ isActive }) => isActive ? 'active' : ''}
+              style={{ fontSize:14, fontWeight:700, letterSpacing:0.3 }}>
               {item.label}
             </NavLink>
           )
@@ -56,11 +57,11 @@ const SiteHeader = () => {
 
       <div style={{ padding:'16px', borderTop:'1px solid #374151' }}>
         <div style={{ fontSize:12, color:'#9ca3af', marginBottom:8 }}>
-          Logged in as <strong style={{ color:'#fff' }}>{user.name}</strong>
-          <br /><span style={{ textTransform:'capitalize' }}>{user.role}</span>
+          <span style={{ color:'#6b7280' }}>Logged in as</span> <strong style={{ color:'#fff', fontSize:13 }}>{user.name}</strong>
+          <br /><span style={{ textTransform:'capitalize', fontSize:11, color:'#6b7280' }}>{user.role}</span>
         </div>
-        <button className="btn btn-ghost btn-sm" style={{ width:'100%', color:'#9ca3af', borderColor:'#374151' }} onClick={handleLogout}>
-          🚪 Logout
+        <button className="btn btn-ghost btn-sm" style={{ width:'100%', color:'#9ca3af', borderColor:'#374151', fontWeight:700, fontSize:13 }} onClick={handleLogout}>
+          Logout
         </button>
       </div>
     </aside>
