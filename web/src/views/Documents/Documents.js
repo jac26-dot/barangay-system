@@ -4,7 +4,7 @@ import { documentAPI, residentAPI } from '../../api/services';
 import { DOCUMENT_TYPES, DOCUMENT_STATUS, STATUS_BADGE } from '../../config';
 import DocumentPrint from './DocumentPrint';
 
-const EMPTY = { residentId:'', documentType:'Barangay Clearance', purpose:'', status:'Pending', fee:'', remarks:'' };
+const EMPTY = { residentId:'', documentType:'Barangay Clearance', purpose:'', status:'Pending', fee:0, remarks:'' };
 
 const Documents = () => {
   const [data, setData]           = useState([]);
@@ -37,7 +37,7 @@ const Documents = () => {
   useEffect(() => { load(); }, [load]);
 
   const openAdd  = () => { setSelected(null); setForm(EMPTY); setModal(true); };
-  const openEdit = (d) => { setSelected(d); setForm({ residentId:d.residentId, documentType:d.documentType, purpose:d.purpose, status:d.status, fee:d.fee, remarks:d.remarks||'' }); setModal(true); };
+  const openEdit = (d) => { setSelected(d); setForm({ residentId:d.residentId, documentType:d.documentType, purpose:d.purpose, status:d.status, fee:d.fee||0, remarks:d.remarks||'' }); setModal(true); };
   const openPrint = async (d) => {
     try {
       const res = await documentAPI.getOne(d.id);
