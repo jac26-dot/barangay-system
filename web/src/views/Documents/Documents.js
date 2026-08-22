@@ -139,17 +139,11 @@ const Documents = () => {
                   {residents.map(r=><option key={r.id} value={r.id}>{r.lastName}, {r.firstName} {r.middleName}</option>)}
                 </select>
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Document Type *</label>
-                  <select className="form-control" value={form.documentType} onChange={e=>setForm({...form,documentType:e.target.value})}>
-                    {DOCUMENT_TYPES.map(t=><option key={t}>{t}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Fee (₱)</label>
-                  <input className="form-control" type="number" step="0.01" value={form.fee} onChange={e=>setForm({...form,fee:e.target.value})} />
-                </div>
+              <div className="form-group">
+                <label className="form-label">Document Type *</label>
+                <select className="form-control" value={form.documentType} onChange={e=>setForm({...form,documentType:e.target.value})}>
+                  {DOCUMENT_TYPES.map(t=><option key={t}>{t}</option>)}
+                </select>
               </div>
               <div className="form-group">
                 <label className="form-label">Purpose *</label>
