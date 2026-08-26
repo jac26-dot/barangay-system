@@ -23,7 +23,7 @@ app.set('trust proxy', 1);
 // Add any other trusted origins to this list as needed.
 const allowedOrigins = [
   process.env.CLIENT_URL || 'http://localhost:3000',
-  'https://resident-portal-9m7p.onrender.com',
+  'https://barangay697-eserbisyo.onrender.com',
   'http://localhost:3001', // handy for local portal dev on an alternate port
 ];
 
