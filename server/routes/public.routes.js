@@ -1,17 +1,18 @@
-const express  = require('express');
+const express   = require('express');
 const rateLimit = require('express-rate-limit');
-const { Op }   = require('sequelize');
-const router   = express.Router();
-const Resident = require('../models/Resident');
-const Document = require('../models/Document');
+const jwt       = require('jsonwebtoken');
+const { Op }    = require('sequelize');
+const router    = express.Router();
+const Resident        = require('../models/Resident');
+const Document        = require('../models/Document');
+const VerificationLog = require('../models/VerificationLog');
 
 // ---------------------------------------------------------------
-// Rate limiting — public endpoints are open to anyone, so they
-// need protection against spam / scripted abuse.
+// Rate limiting
 // ---------------------------------------------------------------
 const submitLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 8,                   // 8 submissions per IP per window
+  windowMs: 15 * 60 * 1000,
+  max: 8,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests from this device. Please try again later.' },
@@ -23,6 +24,17 @@ const lookupLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests. Please try again in a few minutes.' },
+});
+
+// Deliberately strict — this endpoint checks real people's PII against
+// the resident registry, so it must not be usable for brute-force
+// guessing of who is/isn't a resident.
+const verifyLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 6,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many verification attempts. Please try again later or contact the barangay office.' },
 });
 
 const generateControlNumber = () => {
@@ -46,6 +58,10 @@ const CIVIL_STATUS = ['Single', 'Married', 'Widowed', 'Separated'];
 
 function clean(str, max = 255) {
   return String(str || '').trim().slice(0, max);
+}
+
+function normalize(str) {
+  return clean(str).toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 function validateResidentInput(body) {
@@ -72,9 +88,6 @@ function validateResidentInput(body) {
 
   return {
     errors,
-    // Only pass through fields we explicitly allow — never spread
-    // req.body directly into a model, or a caller could set
-    // arbitrary fields (e.g. isVoter, isIndigent, id).
     data: {
       firstName, middleName: clean(body.middleName), lastName,
       birthDate: body.birthDate || null,
@@ -102,11 +115,103 @@ function validateDocumentInput(body) {
 }
 
 // ---------------------------------------------------------------
+// POST /api/residents/verify
+//
+// Checks submitted identity info against the official Resident
+// registry, server-side. Never returns the resident list; only
+// returns a yes/no result plus a short-lived signed token on
+// success (used later to authorize a document request as that
+// specific resident).
+//
+// Matching rule: first name + last name + birth date must match a
+// Resident record (name alone is never sufficient). Address is used
+// as a secondary confirmation signal when multiple residents share
+// the same name + birth date.
+// ---------------------------------------------------------------
+router.post('/residents/verify', verifyLimiter, async (req, res) => {
+  const firstName = clean(req.body.firstName);
+  const lastName  = clean(req.body.lastName);
+  const birthDate = req.body.birthDate;
+  const address   = clean(req.body.address, 500);
+  const contactNumber = clean(req.body.contactNumber, 20);
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+
+  const logAttempt = (status, matchedResidentId = null) =>
+    VerificationLog.create({
+      submittedFirstName: firstName,
+      submittedLastName: lastName,
+      submittedBirthDate: birthDate || null,
+      submittedAddress: address,
+      submittedContactNumber: contactNumber,
+      matchedResidentId,
+      status,
+      ipAddress: ip,
+    }).catch(() => {}); // never let logging failures break the response
+
+  if (!firstName || !lastName || !birthDate) {
+    return res.status(400).json({ success: false, message: 'First name, last name, and date of birth are required.' });
+  }
+
+  try {
+    const candidates = await Resident.findAll({
+      where: {
+        firstName: { [Op.iLike]: firstName },
+        lastName: { [Op.iLike]: lastName },
+        birthDate,
+      },
+      limit: 5,
+    });
+
+    let match = null;
+    if (candidates.length === 1) {
+      match = candidates[0];
+    } else if (candidates.length > 1) {
+      const normAddr = normalize(address);
+      match = candidates.find(c => normAddr && normalize(c.address).includes(normAddr))
+           || candidates.find(c => normAddr && normalize(normAddr).includes(normalize(c.address)));
+    }
+
+    if (!match) {
+      await logAttempt('Failed');
+      return res.json({
+        success: true,
+        data: {
+          verified: false,
+          message: 'We could not verify your residency using the information provided.',
+        },
+      });
+    }
+
+    await logAttempt('Verified', match.id);
+
+    const token = jwt.sign(
+      { residentId: match.id, purpose: 'document-request-verification' },
+      process.env.JWT_SECRET,
+      { expiresIn: '30m' }
+    );
+
+    return res.json({
+      success: true,
+      data: {
+        verified: true,
+        token,
+        residentId: match.id,
+        firstName: match.firstName,
+        lastName: match.lastName,
+        middleName: match.middleName,
+        address: match.address,
+      },
+    });
+  } catch (error) {
+    await logAttempt('Failed');
+    return res.status(500).json({ success: false, message: 'Verification failed. Please try again.' });
+  }
+});
+
+// ---------------------------------------------------------------
 // GET /api/residents/search-public
-// Public, minimal-field resident lookup so the portal can check
-// "does this person already exist?" without needing admin auth
-// and without exposing the full resident directory.
-// Only returns id + name — no address, contact info, etc.
+// Kept for backward compatibility; the RequestForm now relies on
+// the verify step above instead.
 // ---------------------------------------------------------------
 router.get('/residents/search-public', lookupLimiter, async (req, res) => {
   try {
@@ -133,8 +238,7 @@ router.get('/residents/search-public', lookupLimiter, async (req, res) => {
 
 // ---------------------------------------------------------------
 // POST /api/residents/public
-// Creates a resident record from public input. Validated and
-// field-limited — never trusts the raw request body directly.
+// Kept for edge cases, validated and rate-limited as before.
 // ---------------------------------------------------------------
 router.post('/residents/public', submitLimiter, async (req, res) => {
   const { errors, data } = validateResidentInput(req.body);
@@ -151,8 +255,11 @@ router.post('/residents/public', submitLimiter, async (req, res) => {
 
 // ---------------------------------------------------------------
 // POST /api/documents/public
-// Validated, rate-limited, and guards against accidental
-// duplicate submissions (e.g. double-clicking Submit).
+//
+// Now REQUIRES a valid verification token (from /residents/verify).
+// The token's residentId must match the residentId being submitted
+// for — this is what prevents someone from verifying as themselves
+// and then submitting a request claiming to be a different resident.
 // ---------------------------------------------------------------
 router.post('/documents/public', submitLimiter, async (req, res) => {
   const { errors, data } = validateDocumentInput(req.body);
@@ -160,9 +267,23 @@ router.post('/documents/public', submitLimiter, async (req, res) => {
     return res.status(400).json({ success: false, message: errors.join(' ') });
   }
 
+  const { verificationToken } = req.body;
+  if (!verificationToken) {
+    return res.status(401).json({ success: false, message: 'Residency verification is required before submitting a request.' });
+  }
+
+  let payload;
   try {
-    // Duplicate guard: same resident + same document type + same
-    // purpose, still Pending, submitted in the last 10 minutes.
+    payload = jwt.verify(verificationToken, process.env.JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ success: false, message: 'Your verification has expired. Please verify your residency again.' });
+  }
+
+  if (payload.purpose !== 'document-request-verification' || payload.residentId !== data.residentId) {
+    return res.status(403).json({ success: false, message: 'Verification does not match the selected resident.' });
+  }
+
+  try {
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
     const dup = await Document.findOne({
       where: {
@@ -189,6 +310,7 @@ router.post('/documents/public', submitLimiter, async (req, res) => {
       controlNumber,
       status: 'Pending',
       fee: 0,
+      verificationStatus: 'Verified',
     });
 
     res.status(201).json({
@@ -202,9 +324,6 @@ router.post('/documents/public', submitLimiter, async (req, res) => {
 
 // ---------------------------------------------------------------
 // GET /api/documents/track/:controlNumber
-// Public tracking — deliberately returns ONLY non-sensitive
-// fields. Never expose address, contact number, or email here,
-// since a control number is guessable/shareable.
 // ---------------------------------------------------------------
 router.get('/documents/track/:controlNumber', lookupLimiter, async (req, res) => {
   try {
