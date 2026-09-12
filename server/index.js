@@ -53,6 +53,12 @@ app.use('/api/officials', require('./routes/official.routes'));
 app.use('/api/users',     require('./routes/user.routes'));
 app.use('/api/dashboard', require('./routes/dashboard.routes'));
 
+// Resident self-service accounts (registration, login, own profile)
+// and the matching admin approval endpoints.
+const { router: residentAccountRoutes, adminRouter: residentAccountAdminRoutes } = require('./routes/residentAccounts.routes');
+app.use('/api/resident-accounts', residentAccountRoutes);
+app.use('/api/admin/resident-accounts', residentAccountAdminRoutes);
+
 // Health check
 app.get('/', (req, res) => {
   res.json({ message: 'Barangay Management System API is running.' });
