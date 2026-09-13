@@ -23,8 +23,16 @@ const User = sequelize.define('User', {
     allowNull: false,
   },
   role: {
-    type: DataTypes.ENUM('admin', 'staff', 'viewer'),
+    type: DataTypes.ENUM('admin', 'staff', 'viewer', 'resident'),
     defaultValue: 'staff',
+  },
+  residentId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
+  accountStatus: {
+    type: DataTypes.STRING,
+    defaultValue: 'Approved', // admin/staff default approved; residents are explicitly set to 'Pending' at registration
   },
   isActive: {
     type: DataTypes.BOOLEAN,

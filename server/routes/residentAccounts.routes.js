@@ -119,12 +119,14 @@ router.post('/register', registerLimiter, async (req, res) => {
       });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
-
+    // NOTE: do not hash the password here — the User model's
+    // beforeCreate hook already hashes it automatically. Hashing it
+    // twice would make login impossible (bcrypt.compare would never
+    // match a hash-of-a-hash against the plain password).
     const user = await User.create({
       name: `${firstName} ${lastName}`,
       email,
-      password: passwordHash,
+      password, // plain password — model hook hashes it
       role: 'resident',
       isActive: false,           // cannot log in until approved
       accountStatus: 'Pending',
@@ -141,6 +143,13 @@ router.post('/register', registerLimiter, async (req, res) => {
       },
     });
   } catch (error) {
+    console.error('Registration error:', {
+      message: error.message,
+      originalMessage: error.original?.message,
+      code: error.original?.code,
+      detail: error.original?.detail,
+      name: error.name,
+    });
     res.status(500).json({ success: false, message: 'Registration failed. Please try again.' });
   }
 });
