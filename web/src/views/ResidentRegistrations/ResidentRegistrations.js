@@ -1,111 +1,149 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { toast } from 'react-toastify';
+import axios from 'axios';
 
-const API_BASE = process.env.REACT_APP_API_URL || '';
+// Uses the same backend as the rest of the admin app.
+const API = 'https://barangay-system-xf6j.onrender.com/api';
+
+const STATUS_TABS = ['Pending', 'Approved', 'Rejected'];
 
 const ResidentRegistrations = () => {
-  const [registrations, setRegistrations] = useState([]);
+  const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [actionId, setActionId] = useState(null);
+  const [filterStatus, setFilterStatus] = useState('Pending');
+  const [actingId, setActingId] = useState(null);
 
-  const token = localStorage.getItem('token');
-
-  const fetchRegistrations = useCallback(async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/admin/resident-accounts`, {
+      const token = localStorage.getItem('token'); // adjust key name if your admin app stores it differently
+      const res = await axios.get(`${API}/admin/resident-accounts`, {
+        params: { status: filterStatus },
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error('Failed to load resident registrations');
-      const data = await res.json();
-      setRegistrations(Array.isArray(data) ? data : data.registrations || []);
+      setAccounts(res.data.data);
     } catch (err) {
-      toast.error(err.message || 'Failed to load resident registrations');
+      toast.error('Failed to load registrations.');
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [filterStatus]);
 
-  useEffect(() => {
-    fetchRegistrations();
-  }, [fetchRegistrations]);
+  useEffect(() => { load(); }, [load]);
 
-  const handleAction = async (id, action) => {
-    setActionId(id);
+  const handleApprove = async (id) => {
+    setActingId(id);
     try {
-      const res = await fetch(`${API_BASE}/admin/resident-accounts/${id}/${action}`, {
-        method: 'POST',
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/admin/resident-accounts/${id}/approve`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error(`Failed to ${action} registration`);
-      toast.success(action === 'approve' ? 'Registration approved' : 'Registration rejected');
-      setRegistrations((prev) => prev.filter((r) => r.id !== id));
+      toast.success('Account approved.');
+      load();
     } catch (err) {
-      toast.error(err.message || `Failed to ${action} registration`);
+      toast.error(err.response?.data?.message || 'Approval failed.');
     } finally {
-      setActionId(null);
+      setActingId(null);
     }
   };
 
-  if (loading) {
-    return <div className="page-loading">Loading resident registrations...</div>;
-  }
+  const handleReject = async (id) => {
+    if (!window.confirm('Reject this registration? The applicant will need to contact the barangay office.')) return;
+    setActingId(id);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/admin/resident-accounts/${id}/reject`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success('Account rejected.');
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Rejection failed.');
+    } finally {
+      setActingId(null);
+    }
+  };
 
   return (
-    <div className="resident-registrations">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h2 style={{ margin: 0 }}>Resident Registrations</h2>
-        <button className="btn btn-ghost btn-sm" onClick={fetchRegistrations}>
-          Refresh
-        </button>
+    <div>
+      <div className="page-header">
+        <div>
+          <h2>Resident Account Registrations</h2>
+          <p>{accounts.length} {filterStatus.toLowerCase()} registration{accounts.length !== 1 ? 's' : ''}</p>
+        </div>
       </div>
 
-      {registrations.length === 0 ? (
-        <div className="empty-state" style={{ padding: 32, textAlign: 'center', color: '#9ca3af' }}>
-          No pending resident registrations.
-        </div>
-      ) : (
-        <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', padding: 8 }}>Name</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Email</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Contact No.</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Date Registered</th>
-              <th style={{ textAlign: 'right', padding: 8 }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {registrations.map((r) => (
-              <tr key={r.id} style={{ borderTop: '1px solid #374151' }}>
-                <td style={{ padding: 8 }}>{r.name || r.fullName}</td>
-                <td style={{ padding: 8 }}>{r.email}</td>
-                <td style={{ padding: 8 }}>{r.contactNumber || r.phone || '—'}</td>
-                <td style={{ padding: 8 }}>
-                  {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—'}
-                </td>
-                <td style={{ padding: 8, textAlign: 'right' }}>
-                  <button
-                    className="btn btn-sm btn-success"
-                    disabled={actionId === r.id}
-                    onClick={() => handleAction(r.id, 'approve')}
-                    style={{ marginRight: 8 }}
-                  >
-                    Approve
-                  </button>
-                  <button
-                    className="btn btn-sm btn-danger"
-                    disabled={actionId === r.id}
-                    onClick={() => handleAction(r.id, 'reject')}
-                  >
-                    Reject
-                  </button>
-                </td>
-              </tr>
+      <div className="card">
+        <div className="card-header">
+          <div style={{ display: 'flex', gap: 10 }}>
+            {STATUS_TABS.map(s => (
+              <button
+                key={s}
+                className={`btn btn-sm ${filterStatus === s ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => setFilterStatus(s)}
+              >
+                {s}
+              </button>
             ))}
-          </tbody>
-        </table>
-      )}
+          </div>
+        </div>
+
+        {loading ? <div className="loading">Loading...</div> : (
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Applicant Name</th>
+                  <th>Email</th>
+                  <th>Linked Resident</th>
+                  <th>Address</th>
+                  <th>Contact</th>
+                  <th>Submitted</th>
+                  {filterStatus === 'Pending' && <th>Actions</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {accounts.length === 0 ? (
+                  <tr><td colSpan={7}>
+                    <div className="empty-state"><p>No {filterStatus.toLowerCase()} registrations found.</p></div>
+                  </td></tr>
+                ) : accounts.map(acc => (
+                  <tr key={acc.id}>
+                    <td><strong>{acc.name}</strong></td>
+                    <td style={{ fontSize: 13 }}>{acc.email}</td>
+                    <td>
+                      {acc.Resident
+                        ? `${acc.Resident.lastName}, ${acc.Resident.firstName} ${acc.Resident.middleName || ''}`
+                        : <span style={{ color: '#c81e1e' }}>No match — new record</span>}
+                    </td>
+                    <td style={{ fontSize: 12 }}>{acc.Resident?.address || '—'}</td>
+                    <td style={{ fontSize: 12 }}>{acc.Resident?.contactNumber || '—'}</td>
+                    <td>{new Date(acc.createdAt).toLocaleDateString('en-PH')}</td>
+                    {filterStatus === 'Pending' && (
+                      <td style={{ display: 'flex', gap: 6 }}>
+                        <button
+                          className="btn btn-primary btn-sm"
+                          disabled={actingId === acc.id}
+                          onClick={() => handleApprove(acc.id)}
+                        >
+                          {actingId === acc.id ? '...' : 'Approve'}
+                        </button>
+                        <button
+                          className="btn btn-danger btn-sm"
+                          disabled={actingId === acc.id}
+                          onClick={() => handleReject(acc.id)}
+                        >
+                          Reject
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
