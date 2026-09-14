@@ -16,6 +16,7 @@ const navItems = [
   { section: 'Governance' },
   { to: '/transparency', label: 'Transparency' },
   { section: 'System' },
+  { to: '/registrations', label: 'Resident Registrations' },
   { to: '/backup',       label: 'Backup & Export' },
   { to: '/users',        label: 'User Accounts' },
 ];

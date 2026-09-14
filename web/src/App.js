@@ -17,6 +17,7 @@ import Statistics   from './views/Statistics/Statistics';
 import IDCard       from './views/IDCard/IDCard';
 import Transparency from './views/Transparency/Transparency';
 import Backup       from './views/Backup/Backup';
+import ResidentRegistrations from './views/ResidentRegistrations/ResidentRegistrations';
 
 const isAuthenticated = () => !!localStorage.getItem('token');
 
@@ -37,6 +38,7 @@ const Layout = ({ children }) => {
     '/idcard':       'Barangay ID Card Generator',
     '/transparency': 'Barangay Transparency Board',
     '/backup':       'Backup & Export',
+    '/registrations':'Resident Registrations',
   };
   const user     = JSON.parse(localStorage.getItem('user') || '{}');
   const initials = user.name ? user.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : 'U';
@@ -76,6 +78,7 @@ function App() {
         <Route path="/idcard"       element={<PrivateRoute><Layout><IDCard       /></Layout></PrivateRoute>} />
         <Route path="/transparency" element={<PrivateRoute><Layout><Transparency /></Layout></PrivateRoute>} />
         <Route path="/backup"       element={<PrivateRoute><Layout><Backup       /></Layout></PrivateRoute>} />
+        <Route path="/registrations" element={<PrivateRoute><Layout><ResidentRegistrations /></Layout></PrivateRoute>} />
         <Route path="*"             element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
