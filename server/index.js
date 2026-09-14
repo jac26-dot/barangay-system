@@ -11,6 +11,7 @@ const Document = require('./models/Document');
 // Associations
 Document.belongsTo(Resident, { foreignKey: 'residentId' });
 Resident.hasMany(Document, { foreignKey: 'residentId' });
+User.belongsTo(Resident, { foreignKey: 'residentId' });
 const app = express();
 
 // Render (and most hosting platforms) sit the app behind a reverse
