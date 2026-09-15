@@ -16,7 +16,6 @@ const Modal = ({ title, onClose, onSave, form, setForm, saving }) => {
   const age = computeAge(form.birthDate);
   const isSenior = age !== null && age >= 60;
 
-  // Auto-set senior citizen when birthdate changes
   const handleBirthDateChange = (e) => {
     const bd = e.target.value;
     const computedAge = computeAge(bd);
@@ -66,7 +65,7 @@ const Modal = ({ title, onClose, onSave, form, setForm, saving }) => {
             <div className="form-group"><label className="form-label">Occupation</label><input className="form-control" value={form.occupation} onChange={e=>setForm({...form,occupation:e.target.value})} /></div>
             <div className="form-group"><label className="form-label">Status</label>
               <select className="form-control" value={form.status} onChange={e=>setForm({...form,status:e.target.value})}>
-                <option>Active</option><option>Deceased</option><option>Transferred</option>
+                <option>Active</option><option>Deceased</option><option>Transferred</option><option>Archived</option>
               </select>
             </div>
           </div>
@@ -88,6 +87,27 @@ const Modal = ({ title, onClose, onSave, form, setForm, saving }) => {
   );
 };
 
+const DeleteConfirmModal = ({ resident, onClose, onConfirm, deleting }) => (
+  <div className="modal-overlay">
+    <div className="modal" style={{ maxWidth: 420 }}>
+      <div className="modal-header">
+        <h3>Delete Resident</h3>
+        <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}>✕</button>
+      </div>
+      <div className="modal-body">
+        <p>Are you sure you want to delete <strong>{resident.lastName}, {resident.firstName}</strong>?</p>
+        <p style={{ fontSize: 13, color: '#6b7280' }}>
+          If this resident has related document requests or a linked account, the record will be archived instead of permanently deleted, so those records stay intact.
+        </p>
+      </div>
+      <div className="modal-footer">
+        <button className="btn btn-ghost" onClick={onClose} disabled={deleting}>Cancel</button>
+        <button className="btn btn-danger" onClick={onConfirm} disabled={deleting}>{deleting ? 'Deleting...' : 'Delete'}</button>
+      </div>
+    </div>
+  </div>
+);
+
 const Residents = () => {
   const [data, setData]               = useState([]);
   const [loading, setLoading]         = useState(true);
@@ -103,9 +123,10 @@ const Residents = () => {
   const [exporting, setExporting]     = useState(false);
   const [page, setPage]               = useState(1);
   const [total, setTotal]             = useState(0);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting]       = useState(false);
   const LIMIT = 10;
 
-  // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => { setSearch(searchInput); setPage(1); }, 400);
     return () => clearTimeout(timer);
@@ -141,10 +162,19 @@ const Residents = () => {
     finally { setSaving(false); }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this resident?')) return;
-    try { await residentAPI.remove(id); toast.success('Resident deleted.'); load(); }
-    catch { toast.error('Delete failed.'); }
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const res = await residentAPI.remove(deleteTarget.id);
+      toast.success(res.data?.message || 'Resident deleted.');
+      setDeleteTarget(null);
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Delete failed. Please try again.');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleExport = async () => {
@@ -174,7 +204,6 @@ const Residents = () => {
       const ws = XLSX.utils.json_to_sheet(rows);
       const wb = XLSX.utils.book_new();
 
-      // Column widths
       ws['!cols'] = [
         {wch:4},{wch:15},{wch:15},{wch:15},{wch:5},{wch:12},{wch:8},
         {wch:12},{wch:30},{wch:14},{wch:22},{wch:15},{wch:6},{wch:8},{wch:14},{wch:10},{wch:16},
@@ -204,7 +233,6 @@ const Residents = () => {
 
       <div className="card">
         <div className="card-header" style={{ flexWrap:'wrap', gap:10 }}>
-          {/* Quick Search */}
           <div style={{ position:'relative', flex:1, minWidth:200, maxWidth:320 }}>
             <span style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'#9ca3af', fontSize:14 }}>🔍</span>
             <input
@@ -216,7 +244,6 @@ const Residents = () => {
             />
           </div>
 
-          {/* Filters */}
           <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
             <select className="form-control" style={{ width:'auto' }} value={genderFilter} onChange={e=>{ setGenderFilter(e.target.value); setPage(1); }}>
               <option value="">All Genders</option>
@@ -228,6 +255,7 @@ const Residents = () => {
               <option>Active</option>
               <option>Deceased</option>
               <option>Transferred</option>
+              <option>Archived</option>
             </select>
             {(search || genderFilter || statusFilter) && (
               <button className="btn btn-ghost btn-sm" onClick={()=>{ setSearchInput(''); setSearch(''); setGenderFilter(''); setStatusFilter(''); }}>
@@ -268,7 +296,7 @@ const Residents = () => {
                       <td>
                         <button className="btn btn-ghost btn-sm" style={{marginRight:4}} title="View History" onClick={()=>setHistory(r)}>📋</button>
                         <button className="btn btn-ghost btn-sm" style={{marginRight:4}} title="Edit" onClick={()=>openEdit(r)}>✏️</button>
-                        <button className="btn btn-danger btn-sm" title="Delete" onClick={()=>handleDelete(r.id)}>🗑️</button>
+                        <button className="btn btn-danger btn-sm" title="Delete" onClick={()=>setDeleteTarget(r)}>🗑️</button>
                       </td>
                     </tr>
                   );
@@ -288,11 +316,29 @@ const Residents = () => {
         )}
       </div>
 
-      {/* Resident History Modal */}
-      {historyResident && <ResidentHistory resident={historyResident} onClose={()=>setHistory(null)} />}
+      {showModal && (
+        <Modal
+          title={selected ? 'Edit Resident' : 'Add Resident'}
+          onClose={()=>setModal(false)}
+          onSave={handleSave}
+          form={form}
+          setForm={setForm}
+          saving={saving}
+        />
+      )}
 
-      {/* Add/Edit Modal */}
-      {showModal && <Modal title={selected ? 'Edit Resident' : 'Add New Resident'} onClose={()=>setModal(false)} onSave={handleSave} form={form} setForm={setForm} saving={saving} />}
+      {historyResident && (
+        <ResidentHistory resident={historyResident} onClose={()=>setHistory(null)} />
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmModal
+          resident={deleteTarget}
+          onClose={()=>setDeleteTarget(null)}
+          onConfirm={handleDeleteConfirm}
+          deleting={deleting}
+        />
+      )}
     </div>
   );
 };

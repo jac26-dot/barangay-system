@@ -77,10 +77,28 @@ const remove = async (req, res) => {
   try {
     const resident = await Resident.findByPk(req.params.id);
     if (!resident) return res.status(404).json({ success: false, message: 'Resident not found.' });
-    await resident.destroy();
-    res.json({ success: true, message: 'Resident deleted successfully.' });
+
+    try {
+      await resident.destroy();
+      return res.json({ success: true, message: 'Resident deleted successfully.', data: { archived: false } });
+    } catch (fkError) {
+      // Resident has related document requests and/or a linked
+      // account that must be retained for records — a hard delete
+      // would violate the foreign-key constraint on those tables.
+      // Archive instead of failing silently.
+      if (fkError.name === 'SequelizeForeignKeyConstraintError') {
+        resident.status = 'Archived';
+        await resident.save();
+        return res.json({
+          success: true,
+          message: 'This resident has related document requests or a linked account on file, so the record was archived instead of permanently deleted.',
+          data: { archived: true },
+        });
+      }
+      throw fkError;
+    }
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: error.message || 'Could not delete resident.' });
   }
 };
 
