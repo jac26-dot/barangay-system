@@ -83,6 +83,12 @@ router.post('/register', registerLimiter, async (req, res) => {
   const email     = clean(req.body.email).toLowerCase();
   const password  = req.body.password || '';
   const confirmPassword = req.body.confirmPassword || '';
+  // Self-declared at registration only — never applied when linking to
+  // an existing resident record, so admin-verified classifications on
+  // an existing resident are never silently overwritten.
+  const isVoter = !!req.body.isVoter;
+  const isIndigent = !!req.body.isIndigent;
+  const isSeniorCitizen = !!req.body.isSeniorCitizen;
 
   const errors = [];
   if (!firstName) errors.push('First name is required.');
@@ -136,6 +142,7 @@ router.post('/register', registerLimiter, async (req, res) => {
       resident = await Resident.create({
         firstName, middleName, lastName, birthDate, gender, civilStatus,
         address, contactNumber, email, status: 'Active',
+        isVoter, isIndigent, isSeniorCitizen,
       });
     }
 
