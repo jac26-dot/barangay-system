@@ -335,6 +335,83 @@ router.delete('/me/photo', authenticateResident, async (req, res) => {
   }
 });
 
+// ---------------------------------------------------------------
+// POST /api/resident-accounts/me/documents   (resident-only)
+//
+// Lets an already-logged-in, admin-approved resident submit a
+// document request directly — no separate residency verification
+// needed, since admin approval (Resident Account Registrations)
+// already established who they are. This mirrors the validation
+// and control-number logic in public.routes.js's POST
+// /documents/public, but is scoped to the authenticated resident's
+// own residentId only (never a residentId supplied by the client),
+// so there is no way to submit a request as someone else.
+// ---------------------------------------------------------------
+const DOCUMENT_TYPES = [
+  'Barangay Clearance',
+  'Certificate of Residency',
+  'Certificate of Indigency',
+  'Business Clearance',
+  'Good Moral Certificate',
+];
+
+function generateControlNumber() {
+  const year = new Date().getFullYear();
+  const rand = Math.floor(1000 + Math.random() * 9000);
+  return `BRY-${year}-${rand}`;
+}
+
+router.post('/me/documents', authenticateResident, async (req, res) => {
+  const { residentPayload: payload } = req;
+  const documentType = clean(req.body.documentType);
+  const purpose = clean(req.body.purpose, 300);
+
+  if (!DOCUMENT_TYPES.includes(documentType)) {
+    return res.status(400).json({ success: false, message: 'Invalid document type.' });
+  }
+  if (!purpose) {
+    return res.status(400).json({ success: false, message: 'Purpose is required.' });
+  }
+
+  try {
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const dup = await Document.findOne({
+      where: {
+        residentId: payload.residentId,
+        documentType,
+        purpose,
+        status: 'Pending',
+        createdAt: { [Op.gte]: tenMinutesAgo },
+      },
+    });
+    if (dup) {
+      return res.status(200).json({
+        success: true,
+        data: { controlNumber: dup.controlNumber, documentType: dup.documentType, status: dup.status },
+        message: 'You already submitted this request a moment ago.',
+      });
+    }
+
+    const controlNumber = generateControlNumber();
+    const doc = await Document.create({
+      residentId: payload.residentId,
+      documentType,
+      purpose,
+      controlNumber,
+      status: 'Pending',
+      fee: 0,
+      verificationStatus: 'Verified',
+    });
+
+    res.status(201).json({
+      success: true,
+      data: { controlNumber: doc.controlNumber, documentType: doc.documentType, status: doc.status },
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Could not submit your request. Please try again.' });
+  }
+});
+
 // =================================================================
 // ADMIN ROUTES — require existing admin auth middleware.
 // Mounted separately below at /api/admin/resident-accounts
