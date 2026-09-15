@@ -44,6 +44,26 @@ function normalize(str) {
 }
 
 // ---------------------------------------------------------------
+// Shared auth helper for the resident-only /me routes below.
+// Mirrors the same manual JWT check already used by GET /me, so
+// this is not a behavior change — just made reusable.
+// ---------------------------------------------------------------
+function authenticateResident(req, res, next) {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) return res.status(401).json({ success: false, message: 'Not authenticated.' });
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    if (payload.role !== 'resident') return res.status(403).json({ success: false, message: 'Not authorized.' });
+    req.residentPayload = payload;
+    next();
+  } catch {
+    return res.status(401).json({ success: false, message: 'Session expired. Please log in again.' });
+  }
+}
+
+// ---------------------------------------------------------------
 // POST /api/resident-accounts/register
 //
 // Flow: Register → duplicate-check against Resident registry →
@@ -203,34 +223,115 @@ router.post('/login', loginLimiter, async (req, res) => {
 
 // ---------------------------------------------------------------
 // GET /api/resident-accounts/me   (resident-only, requires own token)
-// Returns only this resident's own profile + their own document
-// requests — never anyone else's (prevents IDOR).
+// Returns this resident's own profile, their own document requests,
+// and their account info (photo, status, created date) — never
+// anyone else's (prevents IDOR).
 // ---------------------------------------------------------------
-router.get('/me', async (req, res) => {
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!token) return res.status(401).json({ success: false, message: 'Not authenticated.' });
-
-  let payload;
-  try {
-    payload = jwt.verify(token, process.env.JWT_SECRET);
-  } catch {
-    return res.status(401).json({ success: false, message: 'Session expired. Please log in again.' });
-  }
-  if (payload.role !== 'resident') return res.status(403).json({ success: false, message: 'Not authorized.' });
+router.get('/me', authenticateResident, async (req, res) => {
+  const { residentPayload: payload } = req;
 
   try {
     const resident = await Resident.findByPk(payload.residentId, {
-      attributes: ['id', 'firstName', 'middleName', 'lastName', 'address', 'contactNumber', 'email'],
+      attributes: ['id', 'firstName', 'middleName', 'lastName', 'address', 'contactNumber', 'email', 'status', 'birthDate', 'gender', 'civilStatus'],
     });
     const requests = await Document.findAll({
       where: { residentId: payload.residentId },
       order: [['createdAt', 'DESC']],
-      attributes: ['controlNumber', 'documentType', 'purpose', 'status', 'createdAt'],
+      attributes: ['controlNumber', 'documentType', 'purpose', 'status', 'createdAt', 'fee', 'remarks'],
     });
-    res.json({ success: true, data: { resident, requests } });
+    const user = await User.findByPk(payload.userId, {
+      attributes: ['photoUrl', 'accountStatus', 'createdAt'],
+    });
+
+    res.json({
+      success: true,
+      data: {
+        resident,
+        requests,
+        account: user ? { photoUrl: user.photoUrl, accountStatus: user.accountStatus, createdAt: user.createdAt } : null,
+      },
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Could not load your profile.' });
+  }
+});
+
+// ---------------------------------------------------------------
+// PATCH /api/resident-accounts/me   (resident-only)
+// Lets a resident update the limited set of fields the system is
+// designed to let them self-edit: contact number and address.
+// Name/email changes require admin verification — not exposed here.
+// ---------------------------------------------------------------
+router.patch('/me', authenticateResident, async (req, res) => {
+  const { residentPayload: payload } = req;
+  const contactNumber = clean(req.body.contactNumber, 20);
+  const address = clean(req.body.address, 500);
+
+  if (contactNumber && !/^(09\d{9}|\+639\d{9})$/.test(contactNumber.replace(/[\s-]/g, ''))) {
+    return res.status(400).json({ success: false, message: 'A valid PH mobile number is required (09XXXXXXXXX).' });
+  }
+
+  try {
+    const resident = await Resident.findByPk(payload.residentId);
+    if (!resident) return res.status(404).json({ success: false, message: 'Resident record not found.' });
+
+    if (contactNumber) resident.contactNumber = contactNumber;
+    if (address) resident.address = address;
+    await resident.save();
+
+    res.json({ success: true, data: { message: 'Profile updated.' } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Could not update your profile.' });
+  }
+});
+
+// ---------------------------------------------------------------
+// PATCH /api/resident-accounts/me/photo   (resident-only)
+// Stores the resident's own profile/ID photo as a base64 data URI.
+// Size/type validation happens on the frontend too, but is
+// re-checked here since the frontend check can be bypassed.
+// ---------------------------------------------------------------
+router.patch('/me/photo', authenticateResident, async (req, res) => {
+  const { residentPayload: payload } = req;
+  const { photo } = req.body;
+
+  if (!photo || typeof photo !== 'string' || !photo.startsWith('data:image/')) {
+    return res.status(400).json({ success: false, message: 'Please provide a valid image.' });
+  }
+  // Rough size check: base64 is ~4/3 the size of the original bytes.
+  // 3MB original → ~4MB of base64 text.
+  if (photo.length > 4.2 * 1024 * 1024) {
+    return res.status(400).json({ success: false, message: 'Image is too large. Please choose a photo under 3MB.' });
+  }
+  const allowedPrefixes = ['data:image/jpeg', 'data:image/jpg', 'data:image/png', 'data:image/webp'];
+  if (!allowedPrefixes.some(p => photo.startsWith(p))) {
+    return res.status(400).json({ success: false, message: 'Please upload a JPG, PNG, or WEBP image.' });
+  }
+
+  try {
+    const user = await User.findByPk(payload.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'Account not found.' });
+    user.photoUrl = photo;
+    await user.save();
+    res.json({ success: true, data: { message: 'Photo updated.' } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Could not save your photo.' });
+  }
+});
+
+// ---------------------------------------------------------------
+// DELETE /api/resident-accounts/me/photo   (resident-only)
+// ---------------------------------------------------------------
+router.delete('/me/photo', authenticateResident, async (req, res) => {
+  const { residentPayload: payload } = req;
+  try {
+    const user = await User.findByPk(payload.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'Account not found.' });
+    user.photoUrl = null;
+    await user.save();
+    res.json({ success: true, data: { message: 'Photo removed.' } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Could not remove your photo.' });
   }
 });
 

@@ -38,6 +38,10 @@ const User = sequelize.define('User', {
     type: DataTypes.BOOLEAN,
     defaultValue: true,
   },
+  photoUrl: {
+    type: DataTypes.TEXT,
+    allowNull: true, // stores a base64 data URI for the resident's profile/ID photo
+  },
 }, {
   tableName: 'users',
   timestamps: true,
