@@ -1,5 +1,6 @@
 const { Op } = require('sequelize');
 const Resident = require('../models/Resident');
+const User = require('../models/User');
 
 // GET /api/residents
 const getAll = async (req, res) => {
@@ -20,6 +21,7 @@ const getAll = async (req, res) => {
     const offset = (page - 1) * limit;
     const { count, rows } = await Resident.findAndCountAll({
       where,
+      include: [{ model: User, as: 'account', attributes: ['photoUrl'], required: false }],
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['lastName', 'ASC']],
@@ -38,7 +40,9 @@ const getAll = async (req, res) => {
 // GET /api/residents/:id
 const getOne = async (req, res) => {
   try {
-    const resident = await Resident.findByPk(req.params.id);
+    const resident = await Resident.findByPk(req.params.id, {
+      include: [{ model: User, as: 'account', attributes: ['photoUrl'], required: false }],
+    });
     if (!resident) return res.status(404).json({ success: false, message: 'Resident not found.' });
     res.json({ success: true, data: resident });
   } catch (error) {

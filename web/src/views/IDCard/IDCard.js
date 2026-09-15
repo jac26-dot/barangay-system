@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { residentAPI } from '../../api/services';
 import logo from '../../barangay-logo.jpg';
@@ -8,7 +8,6 @@ const IDCard = () => {
   const [loading, setLoading]       = useState(true);
   const [search, setSearch]         = useState('');
   const [searchInput, setSearchInput] = useState('');
-  const [selected, setSelected]     = useState(null);
   const [page, setPage]             = useState(1);
   const [total, setTotal]           = useState(0);
   const LIMIT = 10;
@@ -37,6 +36,13 @@ const IDCard = () => {
     const issued = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
     const expiry = new Date(new Date().setFullYear(new Date().getFullYear() + 3))
       .toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+
+    // The resident's own uploaded profile photo (from the resident portal)
+    // is the single source of truth — no separate ID-photo storage.
+    const photoUrl = resident.account?.photoUrl || '';
+    const photoHtml = photoUrl
+      ? `<img src="${photoUrl}" alt="${resident.firstName}" style="width:100%;height:100%;object-fit:cover" />`
+      : `<div class="card-photo-placeholder">👤</div>`;
 
     const printWindow = window.open('', '_blank', 'width=900,height=700');
     printWindow.document.write(`
@@ -120,7 +126,7 @@ const IDCard = () => {
               </div>
               <div class="card-front-body">
                 <div class="card-photo">
-                  <div class="card-photo-placeholder">👤</div>
+                  ${photoHtml}
                 </div>
                 <div class="card-info">
                   <div class="card-name">${resident.lastName}, ${resident.firstName} ${resident.middleName || ''}</div>
@@ -229,7 +235,7 @@ const IDCard = () => {
         <span style={{ fontSize:20 }}>🪪</span>
         <div>
           <div style={{ fontWeight:600, fontSize:13, color:'#1e40af' }}></div>
-          <div style={{ fontSize:12, color:'#3b82f6' }}>Barangay ID Card.</div>
+          <div style={{ fontSize:12, color:'#3b82f6' }}>Barangay ID Card. Photos come from the resident's own uploaded profile photo.</div>
         </div>
       </div>
 
@@ -252,6 +258,7 @@ const IDCard = () => {
             <table>
               <thead>
                 <tr>
+                  <th>Photo</th>
                   <th>Name</th>
                   <th>Address</th>
                   <th>Gender</th>
@@ -262,7 +269,7 @@ const IDCard = () => {
               </thead>
               <tbody>
                 {residents.length === 0 ? (
-                  <tr><td colSpan={6}>
+                  <tr><td colSpan={7}>
                     <div className="empty-state">
                       <div className="empty-icon">🪪</div>
                       <p>{search ? `No residents found for "${search}"` : 'No residents found.'}</p>
@@ -270,6 +277,17 @@ const IDCard = () => {
                   </td></tr>
                 ) : residents.map(r => (
                   <tr key={r.id}>
+                    <td>
+                      {r.account?.photoUrl ? (
+                        <img
+                          src={r.account.photoUrl}
+                          alt={r.firstName}
+                          style={{ width:32, height:32, borderRadius:'50%', objectFit:'cover', border:'1px solid #e5e7eb' }}
+                        />
+                      ) : (
+                        <div style={{ width:32, height:32, borderRadius:'50%', background:'#f3f4f6', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, color:'#9ca3af' }}>—</div>
+                      )}
+                    </td>
                     <td style={{ fontWeight:600 }}>{r.lastName}, {r.firstName} {r.middleName || ''}</td>
                     <td style={{ fontSize:12 }}>{r.address}</td>
                     <td>{r.gender}</td>
