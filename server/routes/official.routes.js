@@ -3,7 +3,7 @@ const router = express.Router();
 const { verifyToken, isStaffOrAdmin, isAdmin } = require('../middleware/auth.middleware');
 const Official = require('../models/Official');
 
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', verifyToken, isStaffOrAdmin, async (req, res) => {
   try {
     const officials = await Official.findAll({ order: [['position', 'ASC']] });
     res.json({ success: true, data: officials });
@@ -12,7 +12,7 @@ router.get('/', verifyToken, async (req, res) => {
   }
 });
 
-router.get('/:id', verifyToken, async (req, res) => {
+router.get('/:id', verifyToken, isStaffOrAdmin, async (req, res) => {
   try {
     const official = await Official.findByPk(req.params.id);
     if (!official) return res.status(404).json({ success: false, message: 'Official not found.' });

@@ -3,7 +3,9 @@ const router = express.Router();
 const { verifyToken, isStaffOrAdmin } = require('../middleware/auth.middleware');
 const Blotter = require('../models/Blotter');
 
-router.get('/', verifyToken, async (req, res) => {
+// Blotter records are sensitive dispute/legal records — admin/staff
+// only, at every route, not just the write operations.
+router.get('/', verifyToken, isStaffOrAdmin, async (req, res) => {
   try {
     const { status, page = 1, limit = 10 } = req.query;
     const where = {};
@@ -27,7 +29,7 @@ router.get('/', verifyToken, async (req, res) => {
   }
 });
 
-router.get('/:id', verifyToken, async (req, res) => {
+router.get('/:id', verifyToken, isStaffOrAdmin, async (req, res) => {
   try {
     const blotter = await Blotter.findByPk(req.params.id);
     if (!blotter) return res.status(404).json({ success: false, message: 'Blotter not found.' });

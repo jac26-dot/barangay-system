@@ -10,6 +10,11 @@ const generateToken = (user) => {
 };
 
 // POST /api/auth/login
+//
+// This is the BARANGAY MANAGEMENT SYSTEM (admin) login — separate
+// from the Resident Portal's own /api/resident-accounts/login.
+// A resident's credentials must never grant access here, even if
+// they share the same users table under the hood.
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -26,6 +31,16 @@ const login = async (req, res) => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+    }
+
+    // Resident Portal accounts are strictly for the Resident Portal —
+    // they must never be able to log into the admin system, even with
+    // correct credentials.
+    if (user.role === 'resident') {
+      return res.status(403).json({
+        success: false,
+        message: 'This account is a Resident Portal account. Please use the Resident Portal to log in.',
+      });
     }
 
     const token = generateToken(user);

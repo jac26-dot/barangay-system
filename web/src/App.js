@@ -21,8 +21,34 @@ import ResidentRegistrations from './views/ResidentRegistrations/ResidentRegistr
 
 const isAuthenticated = () => !!localStorage.getItem('token');
 
+// The Barangay Management System is admin/staff/viewer only.
+// A Resident Portal account must never render these pages, even if
+// a token somehow ended up in localStorage here — checking that a
+// token merely exists isn't enough; its role must be checked too.
+const ADMIN_ROLES = ['admin', 'staff', 'viewer'];
+
+const hasAdminAccess = () => {
+  if (!isAuthenticated()) return false;
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return ADMIN_ROLES.includes(user.role);
+  } catch {
+    return false;
+  }
+};
+
 const PrivateRoute = ({ children }) => {
-  return isAuthenticated() ? children : <Navigate to="/login" replace />;
+  if (!isAuthenticated()) return <Navigate to="/login" replace />;
+  if (!hasAdminAccess()) {
+    // A resident (or any non-admin role) token must never render
+    // admin pages — clear it and bounce to login rather than trust
+    // the frontend alone. The backend independently rejects these
+    // roles on every admin API route regardless of this check.
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    return <Navigate to="/login" replace />;
+  }
+  return children;
 };
 
 const Layout = ({ children }) => {
