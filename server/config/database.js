@@ -33,6 +33,16 @@ const connectDB = async () => {
     console.log('Database connected successfully.');
     await sequelize.sync({ alter: true });
     console.log('Database synced.');
+
+    // One-time, idempotent fix: allow resident records to be archived
+    // (instead of a hard delete) when they have related document
+    // requests or a linked account. Safe to run on every deploy —
+    // Postgres skips it if the value already exists.
+    try {
+      await sequelize.query("ALTER TYPE enum_residents_status ADD VALUE IF NOT EXISTS 'Archived'");
+    } catch (enumError) {
+      console.error('Could not add "Archived" to resident status enum:', enumError.message);
+    }
   } catch (error) {
     console.error('Database connection error:', error.message);
     process.exit(1);
