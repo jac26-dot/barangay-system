@@ -42,6 +42,26 @@ const User = sequelize.define('User', {
     type: DataTypes.TEXT,
     allowNull: true, // stores a base64 data URI for the resident's profile/ID photo
   },
+  emailVerified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true, // admin/staff accounts don't go through OTP; residents get this set to false at registration
+  },
+  otpHash: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  otpExpiresAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  otpAttempts: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+  otpLastSentAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
 }, {
   tableName: 'users',
   timestamps: true,

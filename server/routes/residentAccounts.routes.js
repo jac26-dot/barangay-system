@@ -13,6 +13,7 @@ const router   = express.Router();
 const User     = require('../models/User');
 const Resident = require('../models/Resident');
 const Document = require('../models/Document');
+const { sendOtpEmail } = require('../utils/mailer');
 
 const { verifyToken, isAdmin } = require('../middleware/auth.middleware');
 
@@ -35,6 +36,40 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, message: 'Too many login attempts. Please try again later.' },
 });
+
+const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many verification attempts. Please try again later.' },
+});
+
+const otpResendLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many resend requests. Please try again later.' },
+});
+
+const OTP_COOLDOWN_MS = 60 * 1000; // 60s between resends
+const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
+const OTP_MAX_ATTEMPTS = 5;
+
+function generateOtp() {
+  return String(Math.floor(100000 + Math.random() * 900000)); // 6 digits
+}
+
+async function issueOtp(user) {
+  const otp = generateOtp();
+  user.otpHash = await bcrypt.hash(otp, 10);
+  user.otpExpiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
+  user.otpAttempts = 0;
+  user.otpLastSentAt = new Date();
+  await user.save();
+  await sendOtpEmail(user.email, otp); // never logged, never returned to the client
+}
 
 function clean(str, max = 255) {
   return String(str || '').trim().slice(0, max);
@@ -158,15 +193,30 @@ router.post('/register', registerLimiter, async (req, res) => {
       isActive: false,           // cannot log in until approved
       accountStatus: 'Pending',
       residentId: resident.id,
+      emailVerified: false,      // must verify via OTP before login works
     });
+
+    try {
+      await issueOtp(user);
+    } catch (mailError) {
+      console.error('OTP email send failed:', mailError.message);
+      // The account still exists — the resend endpoint lets them try again.
+      return res.status(201).json({
+        success: true,
+        data: {
+          requiresOtp: true,
+          email: user.email,
+          message: 'Account created, but we could not send your verification email right now. Please use "Resend Code" on the next screen to try again.',
+        },
+      });
+    }
 
     res.status(201).json({
       success: true,
       data: {
-        message: linkedExisting
-          ? 'Account created and linked to your existing resident record. An admin will review and approve your account shortly.'
-          : 'Account created. An admin will review and approve your account shortly.',
-        userId: user.id,
+        requiresOtp: true,
+        email: user.email,
+        message: 'We sent a 6-digit verification code to your email address.',
       },
     });
   } catch (error) {
@@ -178,6 +228,81 @@ router.post('/register', registerLimiter, async (req, res) => {
       name: error.name,
     });
     res.status(500).json({ success: false, message: 'Registration failed. Please try again.' });
+  }
+});
+
+// ---------------------------------------------------------------
+// POST /api/resident-accounts/verify-email
+// ---------------------------------------------------------------
+router.post('/verify-email', otpVerifyLimiter, async (req, res) => {
+  const email = clean(req.body.email).toLowerCase();
+  const otp = clean(req.body.otp, 6);
+
+  if (!email || !otp) {
+    return res.status(400).json({ success: false, message: 'Email and code are required.' });
+  }
+
+  try {
+    const user = await User.findOne({ where: { email, role: 'resident' } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Account not found.' });
+    }
+    if (user.emailVerified) {
+      return res.json({ success: true, data: { message: 'Your email is already verified. You can log in once an admin approves your account.' } });
+    }
+    if (!user.otpHash || !user.otpExpiresAt || new Date() > new Date(user.otpExpiresAt)) {
+      return res.status(400).json({ success: false, message: 'This code has expired. Please request a new one.' });
+    }
+    if (user.otpAttempts >= OTP_MAX_ATTEMPTS) {
+      return res.status(429).json({ success: false, message: 'Too many incorrect attempts. Please request a new code.' });
+    }
+
+    const match = await bcrypt.compare(otp, user.otpHash);
+    if (!match) {
+      user.otpAttempts += 1;
+      await user.save();
+      return res.status(400).json({ success: false, message: 'Incorrect code. Please try again.' });
+    }
+
+    user.emailVerified = true;
+    user.otpHash = null;
+    user.otpExpiresAt = null;
+    user.otpAttempts = 0;
+    await user.save();
+
+    res.json({
+      success: true,
+      data: { message: 'Your email is verified. An admin will review and approve your account shortly.' },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Verification failed. Please try again.' });
+  }
+});
+
+// ---------------------------------------------------------------
+// POST /api/resident-accounts/resend-otp
+// ---------------------------------------------------------------
+router.post('/resend-otp', otpResendLimiter, async (req, res) => {
+  const email = clean(req.body.email).toLowerCase();
+  if (!email) return res.status(400).json({ success: false, message: 'Email is required.' });
+
+  try {
+    const user = await User.findOne({ where: { email, role: 'resident' } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Account not found.' });
+    }
+    if (user.emailVerified) {
+      return res.json({ success: true, data: { message: 'Your email is already verified.' } });
+    }
+    if (user.otpLastSentAt && Date.now() - new Date(user.otpLastSentAt).getTime() < OTP_COOLDOWN_MS) {
+      const waitSec = Math.ceil((OTP_COOLDOWN_MS - (Date.now() - new Date(user.otpLastSentAt).getTime())) / 1000);
+      return res.status(429).json({ success: false, message: `Please wait ${waitSec}s before requesting another code.` });
+    }
+
+    await issueOtp(user); // old OTP is overwritten — previous code stops working immediately
+    res.json({ success: true, data: { message: 'A new verification code has been sent to your email.' } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Could not resend code. Please try again.' });
   }
 });
 
@@ -203,6 +328,14 @@ router.post('/login', loginLimiter, async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid email or password.' });
     }
 
+    if (!user.emailVerified) {
+      return res.status(403).json({
+        success: false,
+        requiresOtp: true,
+        email: user.email,
+        message: 'Please verify your email before logging in.',
+      });
+    }
     if (user.accountStatus === 'Pending') {
       return res.status(403).json({ success: false, message: 'Your account is still pending admin approval.' });
     }
