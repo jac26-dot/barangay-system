@@ -73,10 +73,26 @@ const update = async (req, res) => {
 };
 
 // DELETE /api/residents/:id
+// DELETE /api/residents/:id?force=true  — permanently deletes the
+// resident AND their linked document requests / account. Only
+// meant to be used on an already-archived resident (e.g. duplicate
+// or test data). Irreversible.
 const remove = async (req, res) => {
+  const Document = require('../models/Document');
   try {
     const resident = await Resident.findByPk(req.params.id);
     if (!resident) return res.status(404).json({ success: false, message: 'Resident not found.' });
+
+    if (req.query.force === 'true') {
+      await Document.destroy({ where: { residentId: resident.id } });
+      await User.destroy({ where: { residentId: resident.id } });
+      await resident.destroy();
+      return res.json({
+        success: true,
+        message: 'Resident and all related records were permanently deleted.',
+        data: { archived: false, forced: true },
+      });
+    }
 
     try {
       await resident.destroy();

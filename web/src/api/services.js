@@ -18,7 +18,7 @@ export const residentAPI = {
   getOne:  (id)       => api.get(`/residents/${id}`),
   create:  (data)     => api.post('/residents', data),
   update:  (id, data) => api.put(`/residents/${id}`, data),
-  remove:  (id)       => api.delete(`/residents/${id}`),
+  remove:  (id, force = false) => api.delete(`/residents/${id}`, { params: force ? { force: true } : {} }),
 };
 
 // Documents

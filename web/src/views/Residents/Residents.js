@@ -87,26 +87,42 @@ const Modal = ({ title, onClose, onSave, form, setForm, saving }) => {
   );
 };
 
-const DeleteConfirmModal = ({ resident, onClose, onConfirm, deleting }) => (
-  <div className="modal-overlay">
-    <div className="modal" style={{ maxWidth: 420 }}>
-      <div className="modal-header">
-        <h3>Delete Resident</h3>
-        <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}>✕</button>
-      </div>
-      <div className="modal-body">
-        <p>Are you sure you want to delete <strong>{resident.lastName}, {resident.firstName}</strong>?</p>
-        <p style={{ fontSize: 13, color: '#6b7280' }}>
-          If this resident has related document requests or a linked account, the record will be archived instead of permanently deleted, so those records stay intact.
-        </p>
-      </div>
-      <div className="modal-footer">
-        <button className="btn btn-ghost" onClick={onClose} disabled={deleting}>Cancel</button>
-        <button className="btn btn-danger" onClick={onConfirm} disabled={deleting}>{deleting ? 'Deleting...' : 'Delete'}</button>
+const DeleteConfirmModal = ({ resident, onClose, onConfirm, deleting }) => {
+  const alreadyArchived = resident.status === 'Archived';
+  return (
+    <div className="modal-overlay">
+      <div className="modal" style={{ maxWidth: 420 }}>
+        <div className="modal-header">
+          <h3>{alreadyArchived ? 'Permanently Delete Resident' : 'Delete Resident'}</h3>
+          <button className="btn btn-ghost btn-sm btn-icon" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          {alreadyArchived ? (
+            <>
+              <p>This resident is already <strong>archived</strong>. Do you want to permanently delete <strong>{resident.lastName}, {resident.firstName}</strong> instead?</p>
+              <p style={{ fontSize: 13, color: '#c81e1e', fontWeight: 600 }}>
+                This will also permanently delete their document request history and linked account, if any. This cannot be undone.
+              </p>
+            </>
+          ) : (
+            <>
+              <p>Are you sure you want to delete <strong>{resident.lastName}, {resident.firstName}</strong>?</p>
+              <p style={{ fontSize: 13, color: '#6b7280' }}>
+                If this resident has related document requests or a linked account, the record will be archived instead of permanently deleted, so those records stay intact.
+              </p>
+            </>
+          )}
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-ghost" onClick={onClose} disabled={deleting}>Cancel</button>
+          <button className="btn btn-danger" onClick={() => onConfirm(alreadyArchived)} disabled={deleting}>
+            {deleting ? 'Deleting...' : alreadyArchived ? 'Permanently Delete' : 'Delete'}
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Residents = () => {
   const [data, setData]               = useState([]);
@@ -162,11 +178,11 @@ const Residents = () => {
     finally { setSaving(false); }
   };
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = async (force = false) => {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      const res = await residentAPI.remove(deleteTarget.id);
+      const res = await residentAPI.remove(deleteTarget.id, force);
       toast.success(res.data?.message || 'Resident deleted.');
       setDeleteTarget(null);
       load();
