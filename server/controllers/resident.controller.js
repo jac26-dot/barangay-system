@@ -84,14 +84,28 @@ const remove = async (req, res) => {
     if (!resident) return res.status(404).json({ success: false, message: 'Resident not found.' });
 
     if (req.query.force === 'true') {
-      await Document.destroy({ where: { residentId: resident.id } });
-      await User.destroy({ where: { residentId: resident.id } });
-      await resident.destroy();
-      return res.json({
-        success: true,
-        message: 'Resident and all related records were permanently deleted.',
-        data: { archived: false, forced: true },
-      });
+      const VerificationLog = require('../models/VerificationLog');
+      try {
+        // Keep the audit trail itself, just detach it from the
+        // resident being permanently removed.
+        await VerificationLog.update({ matchedResidentId: null }, { where: { matchedResidentId: resident.id } });
+        await Document.destroy({ where: { residentId: resident.id } });
+        await User.destroy({ where: { residentId: resident.id } });
+        await resident.destroy();
+        return res.json({
+          success: true,
+          message: 'Resident and all related records were permanently deleted.',
+          data: { archived: false, forced: true },
+        });
+      } catch (forceError) {
+        if (forceError.name === 'SequelizeForeignKeyConstraintError') {
+          return res.status(409).json({
+            success: false,
+            message: 'This resident still has other related records that must be removed first (' + (forceError.parent?.constraint || 'unknown reference') + ').',
+          });
+        }
+        throw forceError;
+      }
     }
 
     try {
