@@ -49,6 +49,14 @@ const Document = sequelize.define('Document', {
     type: DataTypes.TEXT,
     allowNull: true,
   },
+  requirementFileUrl: {
+    type: DataTypes.TEXT,
+    allowNull: true, // base64 data URI of an uploaded supporting requirement, if provided
+  },
+  requirementFileName: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 }, {
   tableName: 'documents',
   timestamps: true,

@@ -244,7 +244,7 @@ router.get('/me', authenticateResident, async (req, res) => {
     const requests = await Document.findAll({
       where: { residentId: payload.residentId },
       order: [['createdAt', 'DESC']],
-      attributes: ['controlNumber', 'documentType', 'purpose', 'status', 'createdAt', 'fee', 'remarks'],
+      attributes: ['controlNumber', 'documentType', 'purpose', 'status', 'createdAt', 'fee', 'remarks', 'requirementFileName'],
     });
     const user = await User.findByPk(payload.userId, {
       attributes: ['photoUrl', 'accountStatus', 'createdAt'],
@@ -372,12 +372,27 @@ router.post('/me/documents', authenticateResident, async (req, res) => {
   const { residentPayload: payload } = req;
   const documentType = clean(req.body.documentType);
   const purpose = clean(req.body.purpose, 300);
+  const requirementFile = req.body.requirementFile; // { dataUrl, fileName } or undefined
 
   if (!DOCUMENT_TYPES.includes(documentType)) {
     return res.status(400).json({ success: false, message: 'Invalid document type.' });
   }
   if (!purpose) {
     return res.status(400).json({ success: false, message: 'Purpose is required.' });
+  }
+
+  let requirementFileUrl = null;
+  let requirementFileName = null;
+  if (requirementFile && requirementFile.dataUrl) {
+    const allowedPrefixes = ['data:image/jpeg', 'data:image/jpg', 'data:image/png', 'data:application/pdf'];
+    if (!allowedPrefixes.some(p => requirementFile.dataUrl.startsWith(p))) {
+      return res.status(400).json({ success: false, message: 'Please upload a JPG, PNG, or PDF file.' });
+    }
+    if (requirementFile.dataUrl.length > 4.2 * 1024 * 1024) {
+      return res.status(400).json({ success: false, message: 'File is too large. Please choose a file under 3MB.' });
+    }
+    requirementFileUrl = requirementFile.dataUrl;
+    requirementFileName = clean(requirementFile.fileName, 200) || 'requirement';
   }
 
   try {
@@ -408,6 +423,8 @@ router.post('/me/documents', authenticateResident, async (req, res) => {
       status: 'Pending',
       fee: 0,
       verificationStatus: 'Verified',
+      requirementFileUrl,
+      requirementFileName,
     });
 
     res.status(201).json({
