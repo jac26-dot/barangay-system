@@ -244,7 +244,7 @@ router.get('/me', authenticateResident, async (req, res) => {
     const requests = await Document.findAll({
       where: { residentId: payload.residentId },
       order: [['createdAt', 'DESC']],
-      attributes: ['controlNumber', 'documentType', 'purpose', 'status', 'createdAt', 'fee', 'remarks', 'requirementFileName'],
+      attributes: ['controlNumber', 'documentType', 'purpose', 'status', 'createdAt', 'updatedAt', 'fee', 'remarks', 'requirementFileName'],
     });
     const user = await User.findByPk(payload.userId, {
       attributes: ['photoUrl', 'accountStatus', 'createdAt'],
@@ -255,7 +255,7 @@ router.get('/me', authenticateResident, async (req, res) => {
       data: {
         resident,
         requests,
-        account: user ? { photoUrl: user.photoUrl, accountStatus: user.accountStatus, createdAt: user.createdAt } : null,
+        account: user ? { photoUrl: user.photoUrl, accountStatus: user.accountStatus, createdAt: user.createdAt, updatedAt: user.updatedAt } : null,
       },
     });
   } catch (error) {
