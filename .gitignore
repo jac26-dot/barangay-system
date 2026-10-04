@@ -4,3 +4,8 @@ build/
 dist/
 .DS_Store
 *.log
+
+# local environment files
+.env
+.env.*
+!.env.example
