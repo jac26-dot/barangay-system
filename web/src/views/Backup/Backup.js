@@ -71,7 +71,7 @@ const Backup = () => {
         XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(docRes.data.data.map((d,i)=>({ '#':i+1,'Control #':d.controlNumber,'Document Type':d.documentType,'Purpose':d.purpose,'Status':d.status }))), 'Documents');
         XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(bltRes.data.data.map((b,i)=>({ '#':i+1,'Case #':b.caseNumber,'Incident Type':b.incidentType,'Status':b.status }))), 'Blotters');
         XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(offRes.data.data.map((o,i)=>({ '#':i+1,'Name':`${o.lastName}, ${o.firstName}`,'Position':o.position,'Status':o.status }))), 'Officials');
-        XLSX.writeFile(wb, `barangay-697-backup-${new Date().toISOString().slice(0,10)}.xlsx`);
+        XLSX.writeFile(wb, `barangay-backup-${new Date().toISOString().slice(0,10)}.xlsx`);
         toast.success('Full backup exported!');
         setLoad(type, false);
         return;

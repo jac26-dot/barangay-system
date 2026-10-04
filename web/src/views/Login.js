@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../api/services';
 import { BARANGAY_NAME } from '../config';
-import logo from '../barangay-logo.jpg';
+import logo from '../brand-icon.png';
 
 const Login = () => {
   const navigate = useNavigate();

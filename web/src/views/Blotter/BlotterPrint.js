@@ -37,8 +37,8 @@ const BlotterPrint = ({ blotter, onClose }) => {
       <body>
         <div class="header">
           <div style="font-size:12px;letter-spacing:1px">Republic of the Philippines</div>
-          <div class="bry-name">BARANGAY 697 ZONE 76</div>
-          <div style="font-size:13px">District V, City of Manila</div>
+          <div class="bry-name">BARANGAY MALATE</div>
+          <div style="font-size:13px">Manila, District V, City of Manila</div>
           <div style="font-size:11px">Office of the Punong Barangay</div>
         </div>
 
@@ -102,7 +102,7 @@ const BlotterPrint = ({ blotter, onClose }) => {
         </div>
 
         <div class="footer-note">
-          This blotter report is an official document of Barangay 697 Zone 76. Unauthorized reproduction is prohibited.
+          This blotter report is an official document of Barangay Malate, Manila, District V, City of Manila. Unauthorized reproduction is prohibited.
         </div>
 
         <script>
@@ -133,8 +133,8 @@ const BlotterPrint = ({ blotter, onClose }) => {
         <div style={{ margin:'0 24px 24px', border:'1px solid #e5e7eb', borderRadius:6, padding:32, maxHeight:'60vh', overflowY:'auto', fontFamily:'Times New Roman, serif', fontSize:13, color:'#000', background:'#fff' }}>
           <div style={{ textAlign:'center', marginBottom:20, borderBottom:'3px double #000', paddingBottom:14 }}>
             <div style={{ fontSize:12, letterSpacing:1 }}>Republic of the Philippines</div>
-            <div style={{ fontSize:20, fontWeight:'bold', margin:'4px 0' }}>BARANGAY 697 ZONE 76</div>
-            <div style={{ fontSize:13 }}>District V, City of Manila</div>
+            <div style={{ fontSize:20, fontWeight:'bold', margin:'4px 0' }}>BARANGAY MALATE</div>
+            <div style={{ fontSize:13 }}>Manila, District V, City of Manila</div>
             <div style={{ fontSize:11, color:'#555' }}>Office of the Punong Barangay</div>
           </div>
           <div style={{ textAlign:'center', margin:'16px 0' }}>
@@ -195,7 +195,7 @@ const BlotterPrint = ({ blotter, onClose }) => {
             <div style={{ fontSize:12 }}>Recorded by: Barangay Secretary</div>
           </div>
           <div style={{ fontSize:11, textAlign:'center', marginTop:24, borderTop:'1px solid #ccc', paddingTop:8, color:'#555' }}>
-            This blotter report is an official document of Barangay 697 Zone 76. Unauthorized reproduction is prohibited.
+            This blotter report is an official document of Barangay Malate, Manila, District V, City of Manila. Unauthorized reproduction is prohibited.
           </div>
         </div>
       </div>

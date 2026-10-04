@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { dashboardAPI } from '../../api/services';
 import { BARANGAY_NAME } from '../../config';
-import logo from '../../barangay-logo.jpg';
+import logo from '../../brand-icon.png';
 
 const StatCard = ({ label, value, sub, color }) => (
   <div className="stat-card">
@@ -40,7 +40,7 @@ const Dashboard = () => {
             onError={e => { e.target.style.display='none'; }}
           />
           <div>
-            <div style={{ fontSize:11, opacity:0.7, textTransform:'uppercase', letterSpacing:1 }}>Republic of the Philippines • City of Manila</div>
+            <div style={{ fontSize:11, opacity:0.7, textTransform:'uppercase', letterSpacing:1 }}>BaryoHub</div>
             <div style={{ fontSize:22, fontWeight:700, margin:'4px 0' }}>{BARANGAY_NAME}</div>
             <div style={{ fontSize:12, opacity:0.8 }}>Barangay Management System • {today}</div>
           </div>

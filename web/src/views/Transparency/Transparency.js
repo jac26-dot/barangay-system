@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import logo from '../../barangay-logo.jpg';
+import logo from '../../brand-icon.png';
 
 const TABS = ['Budget', 'Projects', 'Officials Salary', 'Ordinances', 'Contracts'];
 
@@ -87,8 +87,8 @@ const Transparency = () => {
         <div className="card-body" style={{ display:'flex', alignItems:'center', gap:16, padding:'16px 24px' }}>
           <img src={logo} alt="Logo" style={{ width:60, height:60, borderRadius:'50%', objectFit:'cover', border:'2px solid rgba(255,255,255,0.3)' }} />
           <div>
-            <div style={{ fontSize:11, color:'rgba(255,255,255,0.6)', textTransform:'uppercase', letterSpacing:1 }}>Republic of the Philippines • City of Manila</div>
-            <div style={{ fontSize:18, fontWeight:700, color:'#fff' }}>BARANGAY 697 ZONE 76 — Transparency Board</div>
+            <div style={{ fontSize:11, color:'rgba(255,255,255,0.6)', textTransform:'uppercase', letterSpacing:1 }}>BaryoHub</div>
+            <div style={{ fontSize:18, fontWeight:700, color:'#fff' }}>BARANGAY MALATE — Transparency Board</div>
             <div style={{ fontSize:12, color:'rgba(255,255,255,0.7)' }}>In compliance with RA 7160 (Local Government Code) and RA 6713 (Code of Conduct)</div>
           </div>
         </div>

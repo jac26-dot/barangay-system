@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { APP_NAME, BARANGAY_NAME } from './config';
-import logo from './barangay-logo.jpg';
+import logo from './brand-icon.png';
 
 const navItems = [
   { to: '/dashboard',    label: 'Dashboard' },

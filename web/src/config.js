@@ -1,5 +1,9 @@
-export const APP_NAME    = 'BarangayMS';
-export const BARANGAY_NAME = 'Barangay 697 Zone 76';
+export const APP_NAME    = 'BaryoHub';
+// Branding: change these to rebrand this deployment.
+export const PRODUCT_NAME = 'BaryoHub';
+export const ORGANIZATION_NAME = 'Barangay Malate, Manila, District V, City of Manila';
+export const SHORT_NAME = 'Barangay Malate';
+export const BARANGAY_NAME = ORGANIZATION_NAME;
 export const MUNICIPALITY  = 'District V, City of Manila';
 
 export const ROLES = {

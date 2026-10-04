@@ -63,8 +63,8 @@ const DocumentPrint = ({ doc, onClose }) => {
       <body>
         <div class="header">
           <div style="font-size:12px;letter-spacing:1px">Republic of the Philippines</div>
-          <div class="bry-name">BARANGAY 697 ZONE 76</div>
-          <div style="font-size:13px">District V, City of Manila</div>
+          <div class="bry-name">BARANGAY MALATE</div>
+          <div style="font-size:13px">Manila, District V, City of Manila</div>
           <div style="font-size:11px">Office of the Punong Barangay</div>
         </div>
         <div class="control-no">Control No.: <strong>${doc.controlNumber}</strong></div>
@@ -72,7 +72,7 @@ const DocumentPrint = ({ doc, onClose }) => {
         <div style="font-weight:bold;margin-bottom:16px">TO WHOM IT MAY CONCERN:</div>
         <div class="body-text">${template.body}</div>
         <div style="font-size:13px;margin-top:16px">
-          Issued this <strong>${issued}</strong> at Barangay 697 Zone 76, District V, City of Manila, Philippines.
+          Issued this <strong>${issued}</strong> at Barangay Malate, Manila, District V, City of Manila, Philippines.
         </div>
         <div class="footer-row">
           ${parseFloat(doc.fee||0)>0?`<div class="fee-stamp">Fee Paid: &#8369;${parseFloat(doc.fee).toFixed(2)}</div>`:''}
@@ -117,8 +117,8 @@ const DocumentPrint = ({ doc, onClose }) => {
         <div style={{ margin:'0 24px 24px', border:'1px solid #e5e7eb', borderRadius:6, padding:32, maxHeight:'60vh', overflowY:'auto', fontFamily:'Times New Roman, serif', fontSize:14, color:'#000', background:'#fff' }}>
           <div style={{ textAlign:'center', marginBottom:20, borderBottom:'3px double #000', paddingBottom:14 }}>
             <div style={{ fontSize:12, letterSpacing:1 }}>Republic of the Philippines</div>
-            <div style={{ fontSize:20, fontWeight:'bold', margin:'4px 0' }}>BARANGAY 697 ZONE 76</div>
-            <div style={{ fontSize:13 }}>District V, City of Manila</div>
+            <div style={{ fontSize:20, fontWeight:'bold', margin:'4px 0' }}>BARANGAY MALATE</div>
+            <div style={{ fontSize:13 }}>Manila, District V, City of Manila</div>
             <div style={{ fontSize:11, color:'#555' }}>Office of the Punong Barangay</div>
           </div>
           <div style={{ textAlign:'right', fontSize:11, marginBottom:14 }}>Control No.: <strong>{doc.controlNumber}</strong></div>
@@ -127,7 +127,7 @@ const DocumentPrint = ({ doc, onClose }) => {
           </div>
           <div style={{ fontWeight:'bold', marginBottom:12 }}>TO WHOM IT MAY CONCERN:</div>
           <div style={{ lineHeight:2.2, textAlign:'justify' }} dangerouslySetInnerHTML={{ __html: template.body }} />
-          <div style={{ fontSize:13, marginTop:16 }}>Issued this <strong>{issued}</strong> at Barangay 697 Zone 76, District V, City of Manila, Philippines.</div>
+          <div style={{ fontSize:13, marginTop:16 }}>Issued this <strong>{issued}</strong> at Barangay Malate, Manila, District V, City of Manila, Philippines.</div>
           <div style={{ marginTop:40, display:'flex', justifyContent:'space-between', alignItems:'flex-end' }}>
             {parseFloat(doc.fee||0)>0 && (
               <div style={{ border:'2px solid #000', padding:'6px 14px', fontSize:12, fontWeight:'bold' }}>
