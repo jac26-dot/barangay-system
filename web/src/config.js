@@ -3,6 +3,8 @@ export const APP_NAME    = 'BaryoHub';
 export const PRODUCT_NAME = 'BaryoHub';
 export const ORGANIZATION_NAME = 'Barangay Malate, Manila, District V, City of Manila';
 export const SHORT_NAME = 'Barangay Malate';
+// Name printed above the Punong Barangay signature line on documents. Leave empty to print a blank line.
+export const CAPTAIN_NAME = '';
 export const BARANGAY_NAME = ORGANIZATION_NAME;
 export const MUNICIPALITY  = 'District V, City of Manila';
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { CAPTAIN_NAME } from '../../config';
 
 const DocumentPrint = ({ doc, onClose }) => {
   const resident = doc.Resident || {};
@@ -77,7 +78,7 @@ const DocumentPrint = ({ doc, onClose }) => {
         <div class="footer-row">
           ${parseFloat(doc.fee||0)>0?`<div class="fee-stamp">Fee Paid: &#8369;${parseFloat(doc.fee).toFixed(2)}</div>`:''}
           <div class="sig-block">
-            <div style="font-weight:bold;text-transform:uppercase">HON. [CAPTAIN NAME]</div>
+            <div style="font-weight:bold;text-transform:uppercase">${CAPTAIN_NAME ? 'HON. ' + CAPTAIN_NAME : '&nbsp;'}</div>
             <div class="sig-line"></div>
             <div style="font-size:12px">Punong Barangay</div>
           </div>
@@ -135,7 +136,7 @@ const DocumentPrint = ({ doc, onClose }) => {
               </div>
             )}
             <div style={{ textAlign:'center' }}>
-              <div style={{ fontWeight:'bold', textTransform:'uppercase' }}>HON. Garphil Andrey Lee</div>
+              <div style={{ fontWeight:'bold', textTransform:'uppercase' }}>{CAPTAIN_NAME ? 'HON. ' + CAPTAIN_NAME : '\u00A0'}</div>
               <div style={{ borderTop:'1px solid #000', width:220, margin:'4px auto' }}></div>
               <div style={{ fontSize:12 }}>Punong Barangay</div>
             </div>

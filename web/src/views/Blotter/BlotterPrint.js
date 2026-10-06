@@ -1,4 +1,5 @@
 import React from 'react';
+import { CAPTAIN_NAME } from '../../config';
 
 const BlotterPrint = ({ blotter, onClose }) => {
   const today   = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
@@ -91,7 +92,7 @@ const BlotterPrint = ({ blotter, onClose }) => {
           </div>
           <div style="text-align:center">
             <div class="sig-line"></div>
-            <div style="font-weight:bold;text-transform:uppercase;font-size:12px">HON. Garphil Andrey Lee</div>
+            <div style="font-weight:bold;text-transform:uppercase;font-size:12px">${CAPTAIN_NAME ? 'HON. ' + CAPTAIN_NAME : '&nbsp;'}</div>
             <div style="font-size:11px">Punong Barangay</div>
           </div>
         </div>
@@ -182,7 +183,7 @@ const BlotterPrint = ({ blotter, onClose }) => {
             </>
           )}
           <div style={{ display:'flex', justifyContent:'space-around', marginTop:50 }}>
-            {[{ name: blotter.complainantName, title:'Complainant' },{ name: blotter.respondentName, title:'Respondent' },{ name:'HON. Garphil Andrey Lee', title:'Punong Barangay' }].map(s => (
+            {[{ name: blotter.complainantName, title:'Complainant' },{ name: blotter.respondentName, title:'Respondent' },{ name:(CAPTAIN_NAME ? 'HON. ' + CAPTAIN_NAME : '\u00A0'), title:'Punong Barangay' }].map(s => (
               <div key={s.title} style={{ textAlign:'center' }}>
                 <div style={{ borderTop:'1px solid #000', width:180, margin:'4px auto' }}></div>
                 <div style={{ fontWeight:'bold', textTransform:'uppercase', fontSize:12 }}>{s.name}</div>
