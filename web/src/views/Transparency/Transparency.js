@@ -88,7 +88,7 @@ const Transparency = () => {
           <img src={logo} alt="Logo" style={{ width:60, height:60, borderRadius:'50%', objectFit:'cover', border:'2px solid rgba(255,255,255,0.3)' }} />
           <div>
             <div style={{ fontSize:11, color:'rgba(255,255,255,0.6)', textTransform:'uppercase', letterSpacing:1 }}>BaryoHub</div>
-            <div style={{ fontSize:18, fontWeight:700, color:'#fff' }}>BARANGAY MALATE — Transparency Board</div>
+            <div style={{ fontSize:18, fontWeight:700, color:'#fff' }}>BARANGAY SAMPLE — Transparency Board</div>
             <div style={{ fontSize:12, color:'rgba(255,255,255,0.7)' }}>In compliance with RA 7160 (Local Government Code) and RA 6713 (Code of Conduct)</div>
           </div>
         </div>

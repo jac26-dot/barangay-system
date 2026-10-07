@@ -43,7 +43,7 @@ const BarangayMap = () => {
     <div>
       <div className="page-header">
         <div>
-          <h2>Barangay Malate Map</h2>
+          <h2>Barangay Sample Map</h2>
           <p>Malate, Manila — District V • Based on actual barangay boundary</p>
         </div>
         <button className="btn btn-primary" onClick={()=>window.print()}>🖨️ Print Map</button>
@@ -72,7 +72,7 @@ const BarangayMap = () => {
         <div className="card">
           <div className="card-header">
             <div>
-              <h3 style={{margin:0}}>Barangay Malate Map</h3>
+              <h3 style={{margin:0}}>Barangay Sample Map</h3>
               <div style={{fontSize:11,color:'#6b7280'}}>Malate, Manila • Click a zone to view residents</div>
             </div>
           </div>
@@ -111,7 +111,7 @@ const BarangayMap = () => {
               {/* ===== BARANGAY BOUNDARY (red dotted) ===== */}
               <rect x="120" y="71" width="452" height="478" rx="4"
                 fill="none" stroke="#c81e1e" strokeWidth="3" strokeDasharray="10,5"/>
-              <text x="346" y="68" fontSize="9" fill="#c81e1e" fontWeight="800" textAnchor="middle">BARANGAY MALATE BOUNDARY</text>
+              <text x="346" y="68" fontSize="9" fill="#c81e1e" fontWeight="800" textAnchor="middle">BARANGAY SAMPLE BOUNDARY</text>
 
               {/* ===== INTERIOR STREETS ===== */}
 
@@ -253,7 +253,7 @@ const BarangayMap = () => {
                   <g>
                     <rect x="122" y="405" width="450" height="73" rx="6"
                       fill="#f3f4f6" fillOpacity="0.6" stroke="#d1d5db" strokeWidth="1"/>
-                    <text x="347" y="435" fontSize="11" fill="#6b7280" fontWeight="600" textAnchor="middle">Entire Barangay Malate</text>
+                    <text x="347" y="435" fontSize="11" fill="#6b7280" fontWeight="600" textAnchor="middle">Entire Barangay Sample</text>
                     <text x="347" y="452" fontSize="9" fill="#9ca3af" textAnchor="middle">All streets within the red boundary</text>
                     <text x="347" y="468" fontSize="9" fill="#6b7280" textAnchor="middle">Total: {totalResidents} registered residents</text>
                   </g>
@@ -293,7 +293,7 @@ const BarangayMap = () => {
               {/* Logo */}
               <circle cx="152" cy="580" r="24" fill="white" stroke="#e5e7eb" strokeWidth="1"/>
               <image href={logo} x="130" y="558" width="44" height="44" clipPath="circle(22px at 22px 22px)"/>
-              <text x="185" y="572" fontSize="10" fill="#1e40af" fontWeight="800">BARANGAY MALATE</text>
+              <text x="185" y="572" fontSize="10" fill="#1e40af" fontWeight="800">BARANGAY SAMPLE</text>
               <text x="185" y="585" fontSize="8" fill="#475569">Malate, Manila • District V • NCR</text>
 
               {/* Direction labels */}
@@ -419,7 +419,7 @@ const BarangayMap = () => {
               <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
                 <img src={logo} alt="Logo" style={{width:40,height:40,borderRadius:'50%',objectFit:'cover'}}/>
                 <div>
-                  <div style={{fontWeight:700,fontSize:13}}>Barangay Malate</div>
+                  <div style={{fontWeight:700,fontSize:13}}>Barangay Sample</div>
                   <div style={{fontSize:11,color:'#6b7280'}}>Malate, Manila</div>
                 </div>
               </div>

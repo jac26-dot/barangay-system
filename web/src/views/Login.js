@@ -91,7 +91,7 @@ const Login = () => {
             alt="Barangay Logo"
             style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', marginBottom: 12, border: '3px solid #e5e7eb' }}
           />
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: 0 }}>Barangay MS</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: 0 }}>BaryoHub</h1>
           <p style={{ fontSize: 13, color: '#6b7280', margin: '4px 0 0' }}>{BARANGAY_NAME}</p>
         </div>
 

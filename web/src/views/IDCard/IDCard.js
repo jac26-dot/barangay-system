@@ -120,8 +120,8 @@ const IDCard = () => {
               <div class="card-front-header">
                 <img src="${logo}" alt="Logo" />
                 <div class="card-front-header-text">
-                  <h3>BARANGAY MALATE</h3>
-                  <p>Manila, District V, City of Manila • Philippines</p>
+                  <h3>BARANGAY SAMPLE</h3>
+                  <p>Sample City, Philippines</p>
                 </div>
               </div>
               <div class="card-front-body">
@@ -160,7 +160,7 @@ const IDCard = () => {
           <div class="id-card">
             <div class="card-back">
               <div class="card-back-header">
-                <p>BARANGAY MALATE — RESIDENT IDENTIFICATION CARD</p>
+                <p>BARANGAY SAMPLE — RESIDENT IDENTIFICATION CARD</p>
               </div>
               <div class="card-back-body">
                 <div class="back-row">
@@ -186,8 +186,8 @@ const IDCard = () => {
 
                 <div class="emergency">
                   <p>IN CASE OF EMERGENCY, PLEASE CONTACT:</p>
-                  <h5>Barangay Malate Hall</h5>
-                  <p>Manila, District V, City of Manila</p>
+                  <h5>Barangay Sample Hall</h5>
+                  <p>Sample City, Philippines</p>
                 </div>
 
                 <div class="sig-section">
@@ -204,7 +204,7 @@ const IDCard = () => {
                 </div>
               </div>
               <div class="card-back-footer">
-                <p>This ID is the property of Barangay Malate, Manila, District V, City of Manila. If found, please return to the nearest barangay hall.</p>
+                <p>This ID is the property of Barangay Sample, Sample City, Philippines. If found, please return to the nearest barangay hall.</p>
               </div>
             </div>
           </div>
