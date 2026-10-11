@@ -1,23 +1,93 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { dashboardAPI } from '../../api/services';
 import { BARANGAY_NAME } from '../../config';
 import logo from '../../brand-icon.png';
 
-const StatCard = ({ label, value, sub, color }) => (
-  <div className="stat-card">
-    <div className="stat-label" style={{ fontWeight:700, fontSize:11, color:'#6b7280' }}>{label}</div>
-    <div className="stat-value" style={{ fontWeight:800, color }}>{value ?? '—'}</div>
-    {sub && <div className="stat-sub">{sub}</div>}
-  </div>
+// Chart colours are plain hex because SVG attributes can't read CSS variables.
+const DOCS_COLOR    = '#1e3a9a'; // ballpen blue
+const BLOTTER_COLOR = '#c42b2b'; // stamp red
+
+const readUser = () => {
+  try { return JSON.parse(localStorage.getItem('user') || '{}'); } catch { return {}; }
+};
+
+const greeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return 'Magandang umaga';
+  if (h < 13) return 'Magandang tanghali';
+  if (h < 18) return 'Magandang hapon';
+  return 'Magandang gabi';
+};
+
+const show = v => (v == null ? '—' : Number(v).toLocaleString('en-PH'));
+const pct  = (n, total) => (total ? Math.round(((n || 0) / total) * 100) : 0);
+
+// One line of the records ledger: label ..... number  percent
+const Row = ({ label, note, value, percent, total }) => (
+  <li className={`dash-row${total ? ' is-total' : ''}`}>
+    <span className="dash-row-label">{label}{note && <small>{note}</small>}</span>
+    <span className="dash-leader" aria-hidden="true" />
+    <span className="dash-row-num">{show(value)}</span>
+    <span className="dash-row-pct">{percent == null ? '' : `${percent}%`}</span>
+  </li>
+);
+
+// A queue-ticket for work that is waiting. It only turns yellow or red when
+// there is something to do; at zero it goes green.
+const Ticket = ({ to, title, value, waiting, clear, go, tone }) => {
+  const isClear = value === 0;
+  return (
+    <Link to={to} className={`dash-ticket ${isClear ? 'is-clear' : tone}`}>
+      <span className="dash-ticket-main">
+        <span className="dash-ticket-title">{title}</span>
+        <span className="dash-ticket-sub">{isClear ? clear : waiting}</span>
+        <span className="dash-ticket-go">{go}</span>
+      </span>
+      <span className="dash-ticket-stub">
+        <span className="dash-ticket-num">{show(value)}</span>
+      </span>
+    </Link>
+  );
+};
+
+const ChartTip = ({ active, payload, label }) => {
+  if (!active || !payload || !payload.length) return null;
+  return (
+    <div className="dash-tip">
+      <strong>{label}</strong>
+      {payload.map(p => (
+        <div key={p.dataKey}><i style={{ background: p.color }} />{p.name}: {p.value}</div>
+      ))}
+    </div>
+  );
+};
+
+// Blank logbook shown before any records exist for the year.
+const EmptyBook = () => (
+  <svg className="dash-empty-art" viewBox="0 0 150 100" aria-hidden="true">
+    <path d="M75 20 C62 12 38 12 18 18 V84 C38 78 62 78 75 86 Z" />
+    <path d="M75 20 C88 12 112 12 132 18 V84 C112 78 88 78 75 86 Z" />
+    <path className="rule" d="M30 34 C42 31 56 31 66 34" />
+    <path className="rule" d="M30 46 C42 43 56 43 66 46" />
+    <path className="rule" d="M30 58 C42 55 56 55 66 58" />
+    <path className="rule" d="M84 34 C94 31 108 31 120 34" />
+    <path className="rule" d="M84 46 C94 43 108 43 120 46" />
+    <path className="mark" d="M100 66 L108 74 L122 58" />
+  </svg>
 );
 
 const Dashboard = () => {
   const [stats,   setStats]   = useState(null);
   const [monthly, setMonthly] = useState([]);
   const [loading, setLoading] = useState(true);
-  const year = new Date().getFullYear();
-  const today = new Date().toLocaleDateString('en-PH', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  const now        = new Date();
+  const year       = now.getFullYear();
+  const today      = now.toLocaleDateString('en-PH', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  const stampDay   = now.toLocaleDateString('en-PH', { weekday:'long' });
+  const stampDate  = now.toLocaleDateString('en-PH', { month:'short', day:'numeric' });
+  const firstName  = (readUser().name || '').trim().split(' ')[0];
 
   useEffect(() => {
     Promise.all([
@@ -28,69 +98,114 @@ const Dashboard = () => {
 
   if (loading) return <div className="loading">Loading dashboard...</div>;
 
+  const total   = stats?.totalResidents || 0;
+  const waiting = (stats?.pendingDocuments || 0) + (stats?.openBlotters || 0);
+  const isEmpty = monthly.every(m => m.documents === 0 && m.blotters === 0);
+  const deskLine = waiting === 0
+    ? 'Nothing is waiting at the desk right now.'
+    : `${waiting} ${waiting === 1 ? 'item is' : 'items are'} waiting at the desk.`;
+
   return (
-    <div>
-      {/* Welcome Banner */}
-      <div className="card" style={{ marginBottom:20, background:'linear-gradient(135deg, #1e3a5f 0%, #1a56db 100%)', border:'none', color:'#fff' }}>
-        <div className="card-body" style={{ display:'flex', alignItems:'center', gap:20, padding:'20px 24px' }}>
+    <div className="dash">
+      {/* Masthead: a manila folder with today's date stamped on it */}
+      <section className="dash-folder">
+        <span className="dash-folder-tab">BaryoHub</span>
+        <div className="dash-folder-body">
           <img
+            className="dash-seal"
             src={logo}
             alt="Barangay Logo"
-            style={{ width:80, height:80, borderRadius:'50%', objectFit:'cover', border:'3px solid rgba(255,255,255,0.3)', flexShrink:0 }}
             onError={e => { e.target.style.display='none'; }}
           />
-          <div>
-            <div style={{ fontSize:11, opacity:0.7, textTransform:'uppercase', letterSpacing:1 }}>BaryoHub</div>
-            <div style={{ fontSize:22, fontWeight:700, margin:'4px 0' }}>{BARANGAY_NAME}</div>
-            <div style={{ fontSize:12, opacity:0.8 }}>Barangay Management System • {today}</div>
+          <div className="dash-folder-text">
+            <h1>{BARANGAY_NAME}</h1>
+            <p className="dash-hello">{greeting()}{firstName ? `, ${firstName}` : ''}.</p>
+            <p className="dash-desk">{deskLine}</p>
+          </div>
+          <div className="dash-stamp" role="img" aria-label={`Today is ${today}`}>
+            <span className="dash-stamp-day">{stampDay}</span>
+            <span className="dash-stamp-date">{stampDate}</span>
+            <span className="dash-stamp-year">{year}</span>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="page-header">
-        <div>
-          <h2>Dashboard</h2>
-          <p>Overview of barangay records and activities</p>
+      <div className="dash-main">
+        {/* Records ledger */}
+        <section className="dash-panel">
+          <h2 className="dash-h">Residents</h2>
+          <ul className="dash-rows">
+            <Row total label="Total residents" note="Registered in the system" value={stats?.totalResidents} />
+            <Row label="Active residents"   note="Currently residing"      value={stats?.activeResidents} percent={pct(stats?.activeResidents, total)} />
+            <Row label="Senior citizens"    note="60 years old and above"  value={stats?.seniorCitizens}  percent={pct(stats?.seniorCitizens, total)} />
+            <Row label="Indigent residents" note="Listed as indigent"      value={stats?.indigents}       percent={pct(stats?.indigents, total)} />
+          </ul>
+
+          <div className="dash-group">
+            <h2 className="dash-h">Barangay hall</h2>
+            <ul className="dash-rows">
+              <Row label="Active officials" note="Serving officials" value={stats?.totalOfficials} />
+              <Row label="Documents released" note="All time"        value={stats?.releasedDocuments} />
+            </ul>
+          </div>
+        </section>
+
+        {/* Work waiting */}
+        <div className="dash-tickets">
+          <Ticket
+            to="/documents"
+            tone="is-highlight"
+            title="Pending documents"
+            value={stats?.pendingDocuments}
+            waiting="Awaiting action."
+            clear="Nothing waiting for release."
+            go="Open documents"
+          />
+          <Ticket
+            to="/blotter"
+            tone="is-stamp"
+            title="Open blotters"
+            value={stats?.openBlotters}
+            waiting="Unresolved cases."
+            clear="No unresolved cases."
+            go="Open blotter records"
+          />
         </div>
       </div>
 
-      <div className="stats-grid">
-        <StatCard label="Total Residents"    value={stats?.totalResidents}    sub="Registered in the system" color="#1a56db" />
-        <StatCard label="Active Residents"   value={stats?.activeResidents}   sub="Currently residing"       color="#057a55" />
-        <StatCard label="Senior Citizens"    value={stats?.seniorCitizens}    sub="60 years old and above"   color="#c27803" />
-        <StatCard label="Indigent Residents" value={stats?.indigents}         sub="Listed as indigent"       color="#7e3af2" />
-        <StatCard label="Pending Documents"  value={stats?.pendingDocuments}  sub="Awaiting action"          color="#e3a008" />
-        <StatCard label="Open Blotters"      value={stats?.openBlotters}      sub="Unresolved cases"         color="#c81e1e" />
-        <StatCard label="Active Officials"   value={stats?.totalOfficials}    sub="Serving officials"        color="#1a56db" />
-        <StatCard label="Docs Released"      value={stats?.releasedDocuments} sub="All time"                 color="#057a55" />
-      </div>
-
-      <div className="card">
-        <div className="card-header">
-          <h3>Monthly Activity — {year}</h3>
-          <span style={{ fontSize:12, color:'#6b7280' }}>Live data from database</span>
+      <section className="dash-panel">
+        <div className="dash-chart-head">
+          <div>
+            <h2 className="dash-h">Monthly activity, {year}</h2>
+            <p>Documents requested and blotters filed each month.</p>
+          </div>
+          <span className="dash-note">Live from the database</span>
         </div>
-        <div className="card-body">
-          {monthly.every(m => m.documents === 0 && m.blotters === 0) ? (
-            <div className="empty-state">
-              <div className="empty-icon"></div>
-              <p>No activity data yet for {year}. Start adding documents and blotters!</p>
+
+        {isEmpty ? (
+          <div className="dash-empty">
+            <EmptyBook />
+            <h3>Nothing recorded for {year} yet</h3>
+            <p>Documents and blotter entries you add will show up here, month by month.</p>
+            <div className="dash-empty-actions">
+              <Link to="/documents" className="btn btn-primary btn-sm">Add a document</Link>
+              <Link to="/blotter" className="btn btn-ghost btn-sm">Record a blotter</Link>
             </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={monthly} margin={{ top:5, right:20, left:0, bottom:5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                <XAxis dataKey="month" tick={{ fontSize:12 }} />
-                <YAxis tick={{ fontSize:12 }} allowDecimals={false} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="documents" name="Documents" fill="#1a56db" radius={[4,4,0,0]} />
-                <Bar dataKey="blotters"  name="Blotters"  fill="#c81e1e" radius={[4,4,0,0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </div>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={monthly} margin={{ top:8, right:8, left:-14, bottom:0 }} barGap={4} barCategoryGap="26%">
+              <CartesianGrid vertical={false} stroke="#cdd8f2" />
+              <XAxis dataKey="month" tick={{ fontSize:12, fill:'#4d5772' }} tickLine={false} axisLine={{ stroke:'#aeb8d3' }} />
+              <YAxis tick={{ fontSize:12, fill:'#4d5772' }} allowDecimals={false} tickLine={false} axisLine={false} />
+              <Tooltip content={<ChartTip />} cursor={{ fill:'rgba(30,58,154,0.06)' }} />
+              <Legend verticalAlign="top" align="right" iconType="square" iconSize={10} wrapperStyle={{ fontSize:12.5, paddingBottom:10 }} />
+              <Bar dataKey="documents" name="Documents" fill={DOCS_COLOR}    radius={[2,2,0,0]} />
+              <Bar dataKey="blotters"  name="Blotters"  fill={BLOTTER_COLOR} radius={[2,2,0,0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </section>
     </div>
   );
 };

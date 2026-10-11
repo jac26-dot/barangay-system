@@ -35,7 +35,7 @@ const getMonthlyData = async (req, res) => {
         [fn('EXTRACT', literal(`MONTH FROM "createdAt"`)), 'month'],
         [fn('COUNT', col('id')), 'count'],
       ],
-      where: { createdAt: { [Op.gte]: new Date(`${year}-01-01`), [Op.lte]: new Date(`${year}-12-31`) } },
+      where: { createdAt: { [Op.gte]: new Date(`${year}-01-01`), [Op.lt]: new Date(`${year + 1}-01-01`) } },
       group: [fn('EXTRACT', literal(`MONTH FROM "createdAt"`))],
       raw: true,
     });
@@ -45,7 +45,7 @@ const getMonthlyData = async (req, res) => {
         [fn('EXTRACT', literal(`MONTH FROM "createdAt"`)), 'month'],
         [fn('COUNT', col('id')), 'count'],
       ],
-      where: { createdAt: { [Op.gte]: new Date(`${year}-01-01`), [Op.lte]: new Date(`${year}-12-31`) } },
+      where: { createdAt: { [Op.gte]: new Date(`${year}-01-01`), [Op.lt]: new Date(`${year + 1}-01-01`) } },
       group: [fn('EXTRACT', literal(`MONTH FROM "createdAt"`))],
       raw: true,
     });
