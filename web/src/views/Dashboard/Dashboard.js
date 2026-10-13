@@ -6,8 +6,8 @@ import { BARANGAY_NAME } from '../../config';
 import logo from '../../brand-icon.png';
 
 // Chart colours are plain hex because SVG attributes can't read CSS variables.
-const DOCS_COLOR    = '#1e3a9a'; // ballpen blue
-const BLOTTER_COLOR = '#c42b2b'; // stamp red
+const DOCS_COLOR    = '#2b4f8a'; // navy blue
+const BLOTTER_COLOR = '#b85c54'; // muted red
 
 const readUser = () => {
   try { return JSON.parse(localStorage.getItem('user') || '{}'); } catch { return {}; }
@@ -34,8 +34,8 @@ const Row = ({ label, note, value, percent, total }) => (
   </li>
 );
 
-// A queue-ticket for work that is waiting. It only turns yellow or red when
-// there is something to do; at zero it goes green.
+// A status card for work that is waiting. Its accent is amber or red when
+// there is something to do; at zero it turns green.
 const Ticket = ({ to, title, value, waiting, clear, go, tone }) => {
   const isClear = value === 0;
   return (
@@ -107,9 +107,8 @@ const Dashboard = () => {
 
   return (
     <div className="dash">
-      {/* Masthead: a manila folder with today's date stamped on it */}
+      {/* Masthead with today's date */}
       <section className="dash-folder">
-        <span className="dash-folder-tab">BaryoHub</span>
         <div className="dash-folder-body">
           <img
             className="dash-seal"
@@ -195,10 +194,10 @@ const Dashboard = () => {
         ) : (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={monthly} margin={{ top:8, right:8, left:-14, bottom:0 }} barGap={4} barCategoryGap="26%">
-              <CartesianGrid vertical={false} stroke="#cdd8f2" />
-              <XAxis dataKey="month" tick={{ fontSize:12, fill:'#4d5772' }} tickLine={false} axisLine={{ stroke:'#aeb8d3' }} />
+              <CartesianGrid vertical={false} stroke="#e3e8ef" />
+              <XAxis dataKey="month" tick={{ fontSize:12, fill:'#4d5772' }} tickLine={false} axisLine={{ stroke:'#b9c2d0' }} />
               <YAxis tick={{ fontSize:12, fill:'#4d5772' }} allowDecimals={false} tickLine={false} axisLine={false} />
-              <Tooltip content={<ChartTip />} cursor={{ fill:'rgba(30,58,154,0.06)' }} />
+              <Tooltip content={<ChartTip />} cursor={{ fill:'rgba(36,70,122,0.06)' }} />
               <Legend verticalAlign="top" align="right" iconType="square" iconSize={10} wrapperStyle={{ fontSize:12.5, paddingBottom:10 }} />
               <Bar dataKey="documents" name="Documents" fill={DOCS_COLOR}    radius={[2,2,0,0]} />
               <Bar dataKey="blotters"  name="Blotters"  fill={BLOTTER_COLOR} radius={[2,2,0,0]} />
