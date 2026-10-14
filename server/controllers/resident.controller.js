@@ -2,6 +2,16 @@ const { Op } = require('sequelize');
 const Resident = require('../models/Resident');
 const User = require('../models/User');
 
+// Only these fields may be written from a request. Without this list a
+// request could also set id, createdAt and anything else on the model.
+const RESIDENT_FIELDS = [
+  'firstName', 'middleName', 'lastName', 'birthDate', 'gender', 'civilStatus',
+  'address', 'contactNumber', 'email', 'occupation',
+  'isVoter', 'isIndigent', 'isSeniorCitizen', 'status',
+];
+const pickResident = (body) =>
+  Object.fromEntries(Object.entries(body || {}).filter(([k]) => RESIDENT_FIELDS.includes(k)));
+
 // GET /api/residents
 const getAll = async (req, res) => {
   try {
@@ -53,7 +63,7 @@ const getOne = async (req, res) => {
 // POST /api/residents
 const create = async (req, res) => {
   try {
-    const resident = await Resident.create(req.body);
+    const resident = await Resident.create(pickResident(req.body));
     res.status(201).json({ success: true, message: 'Resident added successfully.', data: resident });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -65,7 +75,7 @@ const update = async (req, res) => {
   try {
     const resident = await Resident.findByPk(req.params.id);
     if (!resident) return res.status(404).json({ success: false, message: 'Resident not found.' });
-    await resident.update(req.body);
+    await resident.update(pickResident(req.body));
     res.json({ success: true, message: 'Resident updated successfully.', data: resident });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });

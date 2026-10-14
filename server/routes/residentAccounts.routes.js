@@ -48,7 +48,7 @@ function normalize(str) {
 // Mirrors the same manual JWT check already used by GET /me, so
 // this is not a behavior change — just made reusable.
 // ---------------------------------------------------------------
-function authenticateResident(req, res, next) {
+async function authenticateResident(req, res, next) {
   const authHeader = req.headers.authorization || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
   if (!token) return res.status(401).json({ success: false, message: 'Not authenticated.' });
@@ -56,6 +56,14 @@ function authenticateResident(req, res, next) {
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     if (payload.role !== 'resident') return res.status(403).json({ success: false, message: 'Not authorized.' });
+
+    // A deactivated or rejected account loses access right away,
+    // not when its token runs out.
+    const account = await User.findByPk(payload.userId, { attributes: ['id', 'isActive', 'accountStatus'] });
+    if (!account || !account.isActive || ['Pending', 'Rejected'].includes(account.accountStatus)) {
+      return res.status(401).json({ success: false, message: 'Session expired. Please log in again.' });
+    }
+
     req.residentPayload = payload;
     next();
   } catch {
@@ -216,7 +224,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     const token = jwt.sign(
       { userId: user.id, residentId: user.residentId, role: 'resident' },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '12h' }
     );
 
     res.json({

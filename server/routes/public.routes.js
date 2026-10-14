@@ -334,7 +334,14 @@ router.get('/documents/track/:controlNumber', lookupLimiter, async (req, res) =>
       attributes: ['controlNumber', 'documentType', 'purpose', 'status', 'fee', 'remarks', 'createdAt'],
     });
     if (!doc) return res.status(404).json({ success: false, message: 'No request found with that control number.' });
-    res.json({ success: true, data: doc });
+
+    // Control numbers are short and can be guessed, so show only the
+    // surname's first letter to anyone who has just the number.
+    const result = doc.toJSON();
+    if (result.Resident && result.Resident.lastName) {
+      result.Resident.lastName = `${result.Resident.lastName.charAt(0)}.`;
+    }
+    res.json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lookup failed. Please try again.' });
   }

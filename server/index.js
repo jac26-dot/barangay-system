@@ -7,6 +7,9 @@ const { connectDB } = require('./config/database');
 const User = require('./models/User');
 const Resident = require('./models/Resident');
 const Document = require('./models/Document');
+const { securityHeaders, hideServerErrors, adminLoginLimiter } = require('./middleware/security');
+const auditTrail = require('./middleware/audit');
+require('./utils/retention');
 
 // Associations
 Document.belongsTo(Resident, { foreignKey: 'residentId' });
@@ -40,6 +43,13 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Privacy and security protections for every response.
+app.disable('x-powered-by');
+app.use(securityHeaders);
+app.use(hideServerErrors);
+app.use(auditTrail);
+app.use('/api/auth/login', adminLoginLimiter);
 
 // Public routes (no auth required) — must be registered so public
 // endpoints like /api/residents/search-public, /api/residents/public,
