@@ -53,8 +53,6 @@ const DOCUMENT_TYPES = [
   'Business Clearance',
   'Good Moral Certificate',
 ];
-const GENDERS = ['Male', 'Female'];
-const CIVIL_STATUS = ['Single', 'Married', 'Widowed', 'Separated'];
 
 function clean(str, max = 255) {
   return String(str || '').trim().slice(0, max);
@@ -62,43 +60,6 @@ function clean(str, max = 255) {
 
 function normalize(str) {
   return clean(str).toLowerCase().replace(/[^a-z0-9]/g, '');
-}
-
-function validateResidentInput(body) {
-  const errors = [];
-  const firstName = clean(body.firstName);
-  const lastName  = clean(body.lastName);
-  const address   = clean(body.address, 500);
-  const gender    = clean(body.gender);
-  const civilStatus = clean(body.civilStatus);
-  const email     = clean(body.email);
-  const contactNumber = clean(body.contactNumber, 20);
-
-  if (!firstName) errors.push('First name is required.');
-  if (!lastName)  errors.push('Last name is required.');
-  if (!address)   errors.push('Address is required.');
-  if (gender && !GENDERS.includes(gender)) errors.push('Invalid gender.');
-  if (civilStatus && !CIVIL_STATUS.includes(civilStatus)) errors.push('Invalid civil status.');
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Invalid email address.');
-  if (contactNumber && !/^(09\d{9}|\+639\d{9})$/.test(contactNumber.replace(/[\s-]/g, ''))) {
-    errors.push('Invalid contact number. Use format 09XXXXXXXXX.');
-  }
-  if (body.birthDate && isNaN(Date.parse(body.birthDate))) errors.push('Invalid date of birth.');
-  if (body.birthDate && new Date(body.birthDate) > new Date()) errors.push('Date of birth cannot be in the future.');
-
-  return {
-    errors,
-    data: {
-      firstName, middleName: clean(body.middleName), lastName,
-      birthDate: body.birthDate || null,
-      gender: gender || 'Male',
-      civilStatus: civilStatus || 'Single',
-      address,
-      contactNumber,
-      email,
-      status: 'Active',
-    },
-  };
 }
 
 function validateDocumentInput(body) {
@@ -208,50 +169,9 @@ router.post('/residents/verify', verifyLimiter, async (req, res) => {
   }
 });
 
-// ---------------------------------------------------------------
-// GET /api/residents/search-public
-// Kept for backward compatibility; the RequestForm now relies on
-// the verify step above instead.
-// ---------------------------------------------------------------
-router.get('/residents/search-public', lookupLimiter, async (req, res) => {
-  try {
-    const firstName = clean(req.query.firstName);
-    const lastName  = clean(req.query.lastName);
-    if (!firstName || !lastName) {
-      return res.status(400).json({ success: false, message: 'firstName and lastName are required.' });
-    }
-
-    const matches = await Resident.findAll({
-      where: {
-        firstName: { [Op.iLike]: firstName },
-        lastName:  { [Op.iLike]: lastName },
-      },
-      attributes: ['id', 'firstName', 'lastName'],
-      limit: 5,
-    });
-
-    res.json({ success: true, data: matches });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Search failed. Please try again.' });
-  }
-});
-
-// ---------------------------------------------------------------
-// POST /api/residents/public
-// Kept for edge cases, validated and rate-limited as before.
-// ---------------------------------------------------------------
-router.post('/residents/public', submitLimiter, async (req, res) => {
-  const { errors, data } = validateResidentInput(req.body);
-  if (errors.length) {
-    return res.status(400).json({ success: false, message: errors.join(' ') });
-  }
-  try {
-    const resident = await Resident.create(data);
-    res.status(201).json({ success: true, data: { id: resident.id, firstName: resident.firstName, lastName: resident.lastName } });
-  } catch (error) {
-    res.status(400).json({ success: false, message: 'Could not save resident information. Please check your details and try again.' });
-  }
-});
+// The old /residents/search-public and /residents/public routes were
+// removed: the portal does not use them, and they let anyone list or add
+// resident records without logging in.
 
 // ---------------------------------------------------------------
 // POST /api/documents/public
