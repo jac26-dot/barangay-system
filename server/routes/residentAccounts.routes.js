@@ -60,8 +60,13 @@ async function authenticateResident(req, res, next) {
 
     // A deactivated or rejected account loses access right away,
     // not when its token runs out.
-    const account = await User.findByPk(payload.userId, { attributes: ['id', 'isActive', 'accountStatus'] });
-    if (!account || !account.isActive || ['Pending', 'Rejected'].includes(account.accountStatus)) {
+    // The resident record must still exist and be Active too. If the barangay
+    // deleted or archived the resident, the login stops working at once.
+    const account = await User.findByPk(payload.userId, { attributes: ['id', 'isActive', 'accountStatus', 'residentId'] });
+    const record = account && account.residentId
+      ? await Resident.findByPk(account.residentId, { attributes: ['id', 'status'] })
+      : null;
+    if (!account || !account.isActive || ['Pending', 'Rejected'].includes(account.accountStatus) || !record || record.status !== 'Active') {
       return res.status(401).json({ success: false, message: 'Session expired. Please log in again.' });
     }
 
@@ -231,6 +236,15 @@ router.post('/login', loginLimiter, async (req, res) => {
       return res.status(403).json({ success: false, message: 'Your account application was not approved. Please contact the barangay office.' });
     }
     if (!user.isActive) {
+      return res.status(403).json({ success: false, message: 'Your account is not active. Please contact the barangay office.' });
+    }
+
+    // A deleted or archived resident can no longer log in, even if the
+    // account row is still there.
+    const record = user.residentId
+      ? await Resident.findByPk(user.residentId, { attributes: ['id', 'status'] })
+      : null;
+    if (!record || record.status !== 'Active') {
       return res.status(403).json({ success: false, message: 'Your account is not active. Please contact the barangay office.' });
     }
 

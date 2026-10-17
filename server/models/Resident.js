@@ -61,7 +61,7 @@ const Resident = sequelize.define('Resident', {
     defaultValue: false,
   },
   status: {
-    type: DataTypes.ENUM('Active', 'Deceased', 'Transferred'),
+    type: DataTypes.ENUM('Active', 'Deceased', 'Transferred', 'Archived'),
     defaultValue: 'Active',
   },
 }, {

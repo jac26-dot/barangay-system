@@ -93,6 +93,13 @@ const remove = async (req, res) => {
     const resident = await Resident.findByPk(req.params.id);
     if (!resident) return res.status(404).json({ success: false, message: 'Resident not found.' });
 
+    // Deleting or archiving a resident must also close their portal login.
+    // Otherwise they could keep signing in with their old password.
+    await User.update(
+      { isActive: false, accountStatus: 'Rejected' },
+      { where: { residentId: resident.id, role: 'resident' } }
+    );
+
     if (req.query.force === 'true') {
       const VerificationLog = require('../models/VerificationLog');
       try {
