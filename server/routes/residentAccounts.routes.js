@@ -13,6 +13,7 @@ const router   = express.Router();
 const User     = require('../models/User');
 const Resident = require('../models/Resident');
 const Document = require('../models/Document');
+const AuditLog = require('../models/AuditLog');
 
 const { verifyToken, isAdmin } = require('../middleware/auth.middleware');
 
@@ -167,6 +168,18 @@ router.post('/register', registerLimiter, async (req, res) => {
       accountStatus: 'Pending',
       residentId: resident.id,
     });
+
+    // Keep proof of when the resident agreed to the Privacy Notice and
+    // which version they saw (the notice is dated October 2026).
+    AuditLog.create({
+      userId: user.id,
+      role: 'resident',
+      action: 'CONSENT',
+      path: '/api/resident-accounts/register',
+      statusCode: 201,
+      ipAddress: String(req.ip || '').slice(0, 64),
+      detail: 'Privacy Notice 2026-10',
+    }).catch(() => {}); // a logging problem must never block registration
 
     res.status(201).json({
       success: true,
